@@ -7,6 +7,8 @@ This is a chess game where players can play against each other or better, they c
 This project is written in C++ version 20.1.8 and uses the following libraries:
 
 - **SDL3** - for rendering graphics
+- **libcurl** - for making API requests to Lichess REST API
+- **nlohmann-json** - for working with the JSON format returned by Lichess REST API
 - **A C++ Compiler** (e.g. g++, clang++)
 
 Make sure SFML is properly installed and linked before building.
