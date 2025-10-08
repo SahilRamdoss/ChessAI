@@ -1,6 +1,8 @@
 #include "catch_amalgamated.hpp"
 #include "Chess-Model.h"
 
+using Catch::Approx;
+
 //................................................
 //.TTTTTTTTTTTEEEEEEEEEEE..SSSSSSS....STTTTTTTTT..
 //.TTTTTTTTTTTEEEEEEEEEEE.ESSSSSSSS...STTTTTTTTT..
@@ -16,5 +18,3 @@
 //....TTTT....EEEEEEEEEEE.ESSSSSSSSS.....TTTT.....
 //....TTTT....EEEEEEEEEEE..SSSSSSSS......TTTT.....
 //................................................
-
-
