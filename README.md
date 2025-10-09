@@ -13,7 +13,7 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
                       Include the json file only in your current directory.
 - **A C++ Compiler** (e.g. g++, clang++)
 
-Make sure SFML is properly installed and linked before building.
+Make sure SDL3 is properly installed and linked before building.
 
 ### Compiling command for SDL3
 clang++ Chess-View.cpp -o test \
