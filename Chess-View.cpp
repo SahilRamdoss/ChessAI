@@ -1,86 +1,227 @@
+#define SDL_MAIN_USE_CALLBACKS 1
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <SDL3_image/SDL_image.h>
 #include <iostream>
+#include <vector>
 #include <string>
-#include <curl/curl.h>
-#include "nlohmann-json.hpp"
 
-using json = nlohmann::json;
+using std::vector;
+using std::string;
 
-// Callback to collect data from libcurl
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-    ((std::string *)userp)->append((char *)contents, size * nmemb);
-    return size * nmemb;
+// === CONSTANTS ===
+const int TILE_SIZE = 80;                        // Size of each square
+constexpr int WINDOW_WIDTH = 8 * TILE_SIZE;      // Chess board is 8x8
+constexpr int WINDOW_HEIGHT = 8 * TILE_SIZE;
+
+// === GLOBAL SDL VARIABLES ===
+static SDL_Window* window = nullptr;
+static SDL_Renderer* renderer = nullptr;
+
+// We'll store textures for all pieces: [color][type]
+// Color: 0 = WHITE, 1 = BLACK
+// Type: 0 = PAWN, 1 = KNIGHT, 2 = BISHOP, 3 = ROOK, 4 = QUEEN, 5 = KING
+static SDL_Texture* piece_textures[2][6];
+
+// === DATA STRUCTURES ===
+enum piece_type {
+    NONE = 0,
+    PAWN = 1,
+    KNIGHT = 3,
+    BISHOP = 4,
+    ROOK = 5,
+    QUEEN = 9,
+    KING = -1
+};
+
+enum piece_color {
+    BLACK = 0,
+    WHITE = 1
+};
+
+struct chess_piece {
+    piece_type type;
+    piece_color color;
+};
+
+struct board {
+    chess_piece board[8][8];                  // Board state
+    vector<chess_piece> white_pieces_remaining;
+    vector<chess_piece> black_pieces_remaining;
+    vector<chess_piece> white_pieces_lost;
+    vector<chess_piece> black_pieces_lost;
+};
+
+struct game {
+    board game_board;
+    piece_color active_player;
+    int outcome;                               // -1 black, 0 draw, 1 white
+};
+
+// === UTILS ===
+
+// Get the filename of a piece's image based on color and type
+const char* getPieceFilename(piece_color color, piece_type type) {
+    if (type == NONE) return nullptr;
+
+    const char* colorStr = (color == WHITE) ? "White" : "Black";
+    const char* typeStr = nullptr;
+
+    switch (type) {
+        case PAWN:   typeStr = "Pawn"; break;
+        case KNIGHT: typeStr = "Knight"; break;
+        case BISHOP: typeStr = "Bishop"; break;
+        case ROOK:   typeStr = "Rook"; break;
+        case QUEEN:  typeStr = "Queen"; break;
+        case KING:   typeStr = "King"; break;
+        default: return nullptr;
+    }
+
+    static char path[128];
+    snprintf(path, sizeof(path), "assets/pieces/%s_%s.png", colorStr, typeStr);
+    return path;
 }
 
-int main()
-{
-    CURL *curl;
-    CURLcode res;
-    std::string readBuffer;
-
-    // Example FEN: starting position
-    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-    curl = curl_easy_init();
-    if (curl)
-    {
-        // URL-encode the FEN string
-        char *encodedFEN = curl_easy_escape(curl, fen.c_str(), fen.length());
-        std::string url = "https://lichess.org/api/cloud-eval?fen=" + std::string(encodedFEN);
-        curl_free(encodedFEN);
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-
-        // User-Agent required by Lichess
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "ChessProjectBot/1.0");
-
-        // WARNING: only for local testing. Disables SSL cert verification.
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-
-        res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK)
-        {
-            std::cerr << "curl_easy_perform() failed: "
-                      << curl_easy_strerror(res) << std::endl;
-        }
-        else
-        {
-            try
-            {
-                json j = json::parse(readBuffer);
-
-                // Check if pvs exists and is not empty
-                if (!j.contains("pvs") || j["pvs"].empty())
-                {
-                    std::cerr << "No evaluation returned." << std::endl;
-                }
-                else
-                {
-                    std::string bestMove = j["pvs"][0]["moves"];
-                    int eval = 0;
-                    if (j["pvs"][0].contains("cp"))
-                        eval = j["pvs"][0]["cp"];
-
-                    std::cout << "Best move: " << bestMove << std::endl;
-                    std::cout << "Evaluation (centipawns): " << eval << std::endl;
-                }
+// Load all textures into piece_textures array
+bool loadPieceTextures() {
+    for (int c = 0; c < 2; ++c) {
+        for (int t = 0; t < 6; ++t) {
+            piece_type type;
+            switch(t) {
+                case 0: type = PAWN; break;
+                case 1: type = KNIGHT; break;
+                case 2: type = BISHOP; break;
+                case 3: type = ROOK; break;
+                case 4: type = QUEEN; break;
+                case 5: type = KING; break;
             }
-            catch (json::parse_error &e)
-            {
-                std::cerr << "JSON parse error: " << e.what() << std::endl;
+
+            const char* path = getPieceFilename(c == 0 ? WHITE : BLACK, type);
+            SDL_Surface* surf = IMG_Load(path); // SDL3_image
+            if (!surf) {
+                SDL_Log("Failed to load %s: %s", path, SDL_GetError());
+                return false;
+            }
+
+            piece_textures[c][t] = SDL_CreateTextureFromSurface(renderer, surf);
+            SDL_DestroySurface(surf); // SDL3
+            if (!piece_textures[c][t]) {
+                SDL_Log("Failed to create texture for %s: %s", path, SDL_GetError());
+                return false;
             }
         }
-
-        curl_easy_cleanup(curl);
     }
-    else
-    {
-        std::cerr << "Failed to initialize curl." << std::endl;
+    return true;
+}
+
+// Initialize the board with starting pieces
+void initialize_board(board& b) {
+    // Clear all squares
+    for (int r = 0; r < 8; ++r)
+        for (int c = 0; c < 8; ++c)
+            b.board[r][c] = { NONE, WHITE }; // type NONE, color default WHITE
+
+    // Place pawns
+    for (int c = 0; c < 8; ++c) {
+        b.board[6][c] = { PAWN, WHITE };
+        b.board[1][c] = { PAWN, BLACK };
     }
 
-    return 0;
+    // Place major pieces
+    b.board[7][0] = b.board[7][7] = { ROOK, WHITE };
+    b.board[7][1] = b.board[7][6] = { KNIGHT, WHITE };
+    b.board[7][2] = b.board[7][5] = { BISHOP, WHITE };
+    b.board[7][3] = { QUEEN, WHITE };
+    b.board[7][4] = { KING, WHITE };
+
+    b.board[0][0] = b.board[0][7] = { ROOK, BLACK };
+    b.board[0][1] = b.board[0][6] = { KNIGHT, BLACK };
+    b.board[0][2] = b.board[0][5] = { BISHOP, BLACK };
+    b.board[0][3] = { QUEEN, BLACK };
+    b.board[0][4] = { KING, BLACK };
+}
+
+// Draw the board and pieces
+void drawBoard(const board& b) {
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            // Draw tile color (green/brown)
+            bool dark = (row + col) % 2;
+            if (dark)
+                SDL_SetRenderDrawColor(renderer, 118, 150, 86, 255); // dark square
+            else
+                SDL_SetRenderDrawColor(renderer, 238, 238, 210, 255); // light square
+
+            SDL_FRect tile = { float(col * TILE_SIZE), float(row * TILE_SIZE), float(TILE_SIZE), float(TILE_SIZE) };
+            SDL_RenderFillRect(renderer, &tile);
+
+            // Draw piece if present
+            chess_piece piece = b.board[row][col];
+            if (piece.type != NONE) {
+                int colorIdx = (piece.color == WHITE) ? 0 : 1;
+                int typeIdx;
+                switch(piece.type) {
+                    case PAWN: typeIdx = 0; break;
+                    case KNIGHT: typeIdx = 1; break;
+                    case BISHOP: typeIdx = 2; break;
+                    case ROOK: typeIdx = 3; break;
+                    case QUEEN: typeIdx = 4; break;
+                    case KING: typeIdx = 5; break;
+                    default: typeIdx = 0;
+                }
+
+                SDL_FRect dst = { float(col * TILE_SIZE), float(row * TILE_SIZE), float(TILE_SIZE), float(TILE_SIZE) };
+                SDL_RenderTexture(renderer, piece_textures[colorIdx][typeIdx], nullptr, &dst);
+            }
+        }
+    }
+}
+
+// === SDL CALLBACKS ===
+static game current_game;
+
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        SDL_Log("Failed to init SDL: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    if (!SDL_CreateWindowAndRenderer("Chess Board", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+        SDL_Log("Failed to create window/renderer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    // Initialize board and load textures
+    initialize_board(current_game.game_board);
+
+    if (!loadPieceTextures()) {
+        SDL_Log("Failed to load chess piece textures.");
+        return SDL_APP_FAILURE;
+    }
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppIterate(void* appstate) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    drawBoard(current_game.game_board);
+
+    SDL_RenderPresent(renderer);
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
+    if (event->type == SDL_EVENT_QUIT)
+        return SDL_APP_SUCCESS;
+    return SDL_APP_CONTINUE;
+}
+
+void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+    // Destroy piece textures
+    for (int c = 0; c < 2; ++c)
+        for (int t = 0; t < 6; ++t)
+            if (piece_textures[c][t])
+                SDL_DestroyTexture(piece_textures[c][t]);
 }

@@ -7,6 +7,7 @@ This is a chess game where players can play against each other or better, they c
 This project is written in C++ version 20.1.8 and uses the following libraries:
 
 - **SDL3** - for rendering graphics
+- **SDL3_image** - for loading PNG files
 - **libcurl** - for making API requests to Lichess REST API
 - **nlohmann-json** - for working with the JSON format returned by Lichess REST API.
                       Include the json file only in your current directory.
@@ -15,7 +16,14 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
 Make sure SFML is properly installed and linked before building.
 
 ### Compiling command for SDL3
-clang++ Chess-View.cpp -o test -I "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\include" -L "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\include" -lSDL3
+clang++ Chess-View.cpp -o test \
+    -std=c++20 \
+    -I "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\include" \
+    -I "C:\SDL3_image-devel-3.2.4-mingw\SDL3_image-3.2.4\x86_64-w64-mingw32\include" \
+    -L "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\lib" \
+    -L "C:\SDL3_image-devel-3.2.4-mingw\SDL3_image-3.2.4\x86_64-w64-mingw32\lib" \
+    -lSDL3_image -lSDL3
+
 
 ### Compiling command for libcurl and nohmann-json
 clang++ Chess-View.cpp -o test_curl   -I/c/curl-8.16.0_4-win64-mingw/curl-8.16.0_4-win64-mingw/include   -L/c/curl-8.16.0_4-win64-mingw/curl-8.16.0_4-win64-mingw/lib   -lcurl -std=c++20
