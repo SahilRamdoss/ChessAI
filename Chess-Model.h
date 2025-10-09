@@ -3,7 +3,10 @@
 
 
 using std::vector, std::string;
-const int BOARD_SIZE = 8;
+const int TILE_SIZE = 80; // Size of each square on the board
+const int BOARD_SIZE = 8; // The number of files/ranks on the chess board
+constexpr int WINDOW_WIDTH = BOARD_SIZE * TILE_SIZE; // Getting the width of the window
+constexpr int WINDOW_HEIGHT = BOARD_SIZE * TILE_SIZE; // Getting the height of the window
 
 //...................................................................
 //.MMMMMM...MMMMMM...OOOOOOO.....DDDDDDDDD....EEEEEEEEEEE.LLLL.......
@@ -29,7 +32,7 @@ enum piece_type
     NONE = 0,
     PAWN = 1,
     KNIGHT = 3,
-    BISHOP = 3,
+    BISHOP = 4,
     ROOK = 5,
     QUEEN = 9,
     KING = -1

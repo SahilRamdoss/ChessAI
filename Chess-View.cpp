@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
+#include "Chess-Model.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -9,54 +10,20 @@
 using std::vector;
 using std::string;
 
-// === CONSTANTS ===
-const int TILE_SIZE = 80;                        // Size of each square
-constexpr int WINDOW_WIDTH = 8 * TILE_SIZE;      // Chess board is 8x8
-constexpr int WINDOW_HEIGHT = 8 * TILE_SIZE;
-
-// === GLOBAL SDL VARIABLES ===
+// Global Variables needed to be used with the SDL_Window
+// This is the defining convention used in the SDL3 package. So 
+// even if I know that using global variables is poor programming practice
+// I prefer not going against the conventions used in the package so that all works
+// as intended.
 static SDL_Window* window = nullptr;
 static SDL_Renderer* renderer = nullptr;
 
-// We'll store textures for all pieces: [color][type]
-// Color: 0 = WHITE, 1 = BLACK
-// Type: 0 = PAWN, 1 = KNIGHT, 2 = BISHOP, 3 = ROOK, 4 = QUEEN, 5 = KING
+// We'll store textures for all pieces: [color][type] using the array below.
+// The first index represents the color of the piece:
+// 0 = WHITE, 1 = BLACK
+// The second index represents the color of the piece:
+// 0 = PAWN, 1 = KNIGHT, 2 = BISHOP, 3 = ROOK, 4 = QUEEN, 5 = KING
 static SDL_Texture* piece_textures[2][6];
-
-// === DATA STRUCTURES ===
-enum piece_type {
-    NONE = 0,
-    PAWN = 1,
-    KNIGHT = 3,
-    BISHOP = 4,
-    ROOK = 5,
-    QUEEN = 9,
-    KING = -1
-};
-
-enum piece_color {
-    BLACK = 0,
-    WHITE = 1
-};
-
-struct chess_piece {
-    piece_type type;
-    piece_color color;
-};
-
-struct board {
-    chess_piece board[8][8];                  // Board state
-    vector<chess_piece> white_pieces_remaining;
-    vector<chess_piece> black_pieces_remaining;
-    vector<chess_piece> white_pieces_lost;
-    vector<chess_piece> black_pieces_lost;
-};
-
-struct game {
-    board game_board;
-    piece_color active_player;
-    int outcome;                               // -1 black, 0 draw, 1 white
-};
 
 // === UTILS ===
 
