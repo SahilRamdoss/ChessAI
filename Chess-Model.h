@@ -14,21 +14,6 @@ const int BOARD_SIZE = 8;                             // The number of files/ran
 constexpr int WINDOW_WIDTH = BOARD_SIZE * TILE_SIZE;  // Getting the width of the window
 constexpr int WINDOW_HEIGHT = BOARD_SIZE * TILE_SIZE; // Getting the height of the window
 
-//...................................................................
-//.MMMMMM...MMMMMM...OOOOOOO.....DDDDDDDDD....EEEEEEEEEEE.LLLL.......
-//.MMMMMM...MMMMMM..OOOOOOOOOO...DDDDDDDDDD...EEEEEEEEEEE.LLLL.......
-//.MMMMMM...MMMMMM.OOOOOOOOOOOO..DDDDDDDDDDD..EEEEEEEEEEE.LLLL.......
-//.MMMMMMM.MMMMMMM.OOOOO..OOOOO..DDDD...DDDD..EEEE........LLLL.......
-//.MMMMMMM.MMMMMMMOOOOO....OOOOO.DDDD....DDDD.EEEE........LLLL.......
-//.MMMMMMM.MMMMMMMOOOO......OOOO.DDDD....DDDD.EEEEEEEEEE..LLLL.......
-//.MMMMMMMMMMMMMMMOOOO......OOOO.DDDD....DDDD.EEEEEEEEEE..LLLL.......
-//.MMMMMMMMMMMMMMMOOOO......OOOO.DDDD....DDDD.EEEEEEEEEE..LLLL.......
-//.MMMMMMMMMMMMMMMOOOOO....OOOOO.DDDD....DDDD.EEEE........LLLL.......
-//.MMMM.MMMMM.MMMM.OOOOO..OOOOO..DDDD...DDDDD.EEEE........LLLL.......
-//.MMMM.MMMMM.MMMM.OOOOOOOOOOOO..DDDDDDDDDDD..EEEEEEEEEEE.LLLLLLLLL..
-//.MMMM.MMMMM.MMMM..OOOOOOOOOO...DDDDDDDDDD...EEEEEEEEEEE.LLLLLLLLL..
-//.MMMM.MMMMM.MMMM....OOOOOO.....DDDDDDDDD....EEEEEEEEEEE.LLLLLLLLL..
-//...................................................................
 
 /**
  * @brief enum used to represent the type of the chess piece
@@ -98,55 +83,7 @@ private:
     vector<piece_type> black_pieces_lost;            // Black pieces removed from the board
 
 public:
-    board()
-    {
-        // Creating the chess board
-        for (int rank = 0; rank < BOARD_SIZE; rank++)
-        {
-            for (int file = 0; file < BOARD_SIZE; file++)
-            {
-                this->chess_board[rank][file] = {NONE, WHITE};
-            }
-        }
-
-        // Placing the pawns
-        for (int file = 0; file < BOARD_SIZE; file++)
-        {
-            this->chess_board[BOARD_SIZE - 2][file] = {PAWN, WHITE};
-            this->white_pieces_remaining.push_back(PAWN);
-            this->chess_board[1][file] = {PAWN, BLACK};
-            this->black_pieces_remaining.push_back(PAWN);
-        }
-
-        // Placing the other pieces
-        this->chess_board[BOARD_SIZE - 1][0] = this->chess_board[BOARD_SIZE - 1][7] = {ROOK, WHITE};
-        this->white_pieces_remaining.push_back(ROOK);
-        this->white_pieces_remaining.push_back(ROOK);
-        this->chess_board[BOARD_SIZE - 1][1] = this->chess_board[BOARD_SIZE - 1][6] = {KNIGHT, WHITE};
-        this->white_pieces_remaining.push_back(KNIGHT);
-        this->white_pieces_remaining.push_back(KNIGHT);
-        this->chess_board[BOARD_SIZE - 1][2] = this->chess_board[BOARD_SIZE - 1][5] = {BISHOP, WHITE};
-        this->white_pieces_remaining.push_back(BISHOP);
-        this->white_pieces_remaining.push_back(BISHOP);
-        this->chess_board[BOARD_SIZE - 1][3] = {QUEEN, WHITE};
-        this->white_pieces_remaining.push_back(QUEEN);
-        this->chess_board[BOARD_SIZE - 1][4] = {KING, WHITE};
-        this->white_pieces_remaining.push_back(KING);
-
-        this->chess_board[0][0] = this->chess_board[0][7] = {ROOK, BLACK};
-        this->black_pieces_remaining.push_back(ROOK);
-        this->black_pieces_remaining.push_back(ROOK);
-        this->chess_board[0][1] = this->chess_board[0][6] = {KNIGHT, BLACK};
-        this->black_pieces_remaining.push_back(KNIGHT);
-        this->black_pieces_remaining.push_back(KNIGHT);
-        this->chess_board[0][2] = this->chess_board[0][5] = {BISHOP, BLACK};
-        this->black_pieces_remaining.push_back(BISHOP);
-        this->black_pieces_remaining.push_back(BISHOP);
-        this->chess_board[0][3] = {QUEEN, BLACK};
-        this->black_pieces_remaining.push_back(QUEEN);
-        this->chess_board[0][4] = {KING, BLACK};
-        this->black_pieces_remaining.push_back(KING);
-    }
+    board();
 
     /**
      * @brief method used to get the chess piece at this location on the board
@@ -156,27 +93,9 @@ public:
      *
      * @return the chess piece data
      */
-    chess_piece get_piece_at(int rank, int file) const
-    {
-        return this->chess_board[rank][file];
-    }
+    chess_piece get_piece_at(int rank, int file) const;
 
-    bool move_piece(move current_move)
-    {
-        square from = current_move.from;
-        square to = current_move.to;
-        chess_piece moving_piece = this->chess_board[from.rank][from.file];
-
-        if (moving_piece.type == NONE)
-        {
-            return false;
-        }
-
-        this->chess_board[to.rank][to.file] = moving_piece;
-        this->chess_board[from.rank][from.file] = {NONE, WHITE};
-
-        return true;
-    }
+    bool move_piece(move current_move);
 };
 
 /**
@@ -197,8 +116,6 @@ public:
     SDL_Texture *piece_textures[2][6];
 
 public:
-
-    
     /**
      * @brief This function returns the file path of where the png image of
      * the chess piece pass is found
@@ -208,97 +125,14 @@ public:
      *
      * @return the path
      */
-    string get_piece_file_name(piece_color color, piece_type type)
-    {
-        if (type == NONE)
-        {
-            return "";
-        }
-
-        // Use of ternary operator here. Getting the color of the piece as a string
-        string colorStr = (color == WHITE) ? "White" : "Black";
-        string typeStr = "";
-        string path = "";
-
-        // DO NOT CHANGE THE STRING AS IT FOLLOWS THE NAMING CONVENTIONS I USED FOR MY FILES
-        // Getting the type of the piece as a string
-        switch (type)
-        {
-        case PAWN:
-            typeStr = "Pawn";
-            break;
-        case KNIGHT:
-            typeStr = "Knight";
-            break;
-        case BISHOP:
-            typeStr = "Bishop";
-            break;
-        case ROOK:
-            typeStr = "Rook";
-            break;
-        case QUEEN:
-            typeStr = "Queen";
-            break;
-        case KING:
-            typeStr = "King";
-            break;
-        default:
-            return "";
-        }
-
-        // Creating the file path where the png image for the chess piece if found
-        path = format("assets/pieces/{}_{}.png", colorStr, typeStr);
-        return path;
-    }
+    string get_piece_file_name(piece_color color, piece_type type);
 
     /**
      * @brief This procedure load all textures for our chess pieces into piece_textures array
      *
      * @return true if the textures have been loaded correctly into the array
      */
-    bool load_piece_textures()
-    {
-        for (int piece_color_value = FIRST_COLOR; piece_color_value < LAST_COLOR; piece_color_value++)
-        {
-            for (int piece_type_value = FIRST_TYPE; piece_type_value < LAST_TYPE; piece_type_value++)
-            {
-                // Getting the color of the current piece
-                piece_color color_of_piece = static_cast<piece_color>(piece_color_value);
-                // Getting the type of the current piece
-                piece_type type_of_piece = static_cast<piece_type>(piece_type_value);
-
-                // Getting the file path of where the png image for that chess piece is found
-                string file_path = get_piece_file_name(color_of_piece, type_of_piece);
-
-                // Converting the string to a C style string as SDL works with const char *
-                //, not with string data type
-                const char *path = file_path.c_str();
-
-                // Initailizing the surface for the image so that we can manipulate it
-                SDL_Surface *surf = IMG_Load(path);
-
-                // Checks if surf is nullptr, because if it is it means we failed to load the image
-                if (!surf)
-                {
-                    // Print the error message to the console
-                    SDL_Log("Failed to load %s: %s", path, SDL_GetError());
-                    return false;
-                }
-
-                this->piece_textures[piece_color_value][piece_type_value] = SDL_CreateTextureFromSurface(this->renderer, surf);
-
-                // Since we already stored the surface in our array, we destroy it
-                SDL_DestroySurface(surf);
-                // Checks for nullptr, as this means we failed to create the texture
-                if (!this->piece_textures[piece_color_value][piece_type_value])
-                {
-                    SDL_Log("Failed to create texture for %s: %s", path, SDL_GetError());
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
+    bool load_piece_textures();
 };
 
 bool is_legal_move(const board &the_board, const move &current_move);
