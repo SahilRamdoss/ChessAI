@@ -16,7 +16,7 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
 Make sure SDL3 is properly installed and linked before building.
 
 ### Compiling command for SDL3
-clang++ Chess-View.cpp -o test \
+clang++ Chess-Controller.cpp Chess-View.cpp -o test \
     -std=c++20 \
     -I "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\include" \
     -I "C:\SDL3_image-devel-3.2.4-mingw\SDL3_image-3.2.4\x86_64-w64-mingw32\include" \

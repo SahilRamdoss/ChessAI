@@ -68,6 +68,24 @@ struct chess_piece
 };
 
 /**
+ * @brief struct used to represent a square on the chess board
+ */
+struct square
+{
+    int rank; // Represents a row on the chess board (1-8)
+    int file; // Represents a column on the chess board(1-8)
+};
+
+/**
+ * @brief struct used to represent a move made on the chess board
+ */
+struct move
+{
+    square from;
+    square to;
+};
+
+/**
  * @brief This struct stores the state of the board
  */
 class board
@@ -142,6 +160,23 @@ public:
     {
         return this->chess_board[rank][file];
     }
+
+    bool move_piece(move current_move)
+    {
+        square from = current_move.from;
+        square to = current_move.to;
+        chess_piece moving_piece = this->chess_board[from.rank][from.file];
+
+        if (moving_piece.type == NONE)
+        {
+            return false;
+        }
+
+        this->chess_board[to.rank][to.file] = moving_piece;
+        this->chess_board[from.rank][from.file] = {NONE, WHITE};
+
+        return true;
+    }
 };
 
 /**
@@ -152,24 +187,6 @@ struct game
     board game_board;          // Used to store the state of the board
     piece_color active_player; // Used to store the colour of the current player
     int outcome;               // Used to store who won the game. (-1 for black, 0 for draw, 1 for white)
-};
-
-/**
- * @brief struct used to represent a square on the chess board
- */
-struct square
-{
-    int rank; // Represents a row on the chess board (1-8)
-    int file; // Represents a column on the chess board(1-8)
-};
-
-/**
- * @brief struct used to represent a move made on the chess board
- */
-struct move
-{
-    square from;
-    square to;
 };
 
 class SDLStructures
@@ -284,5 +301,12 @@ public:
     }
 };
 
+bool is_legal_move(const board &the_board, const move &current_move);
+
+bool valid_rook_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement);
+
+bool valid_bishop_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement);
+
+bool check_for_obstruction(const board &the_board, const move &current_move, int single_step_rank, int single_step_file);
 
 #endif

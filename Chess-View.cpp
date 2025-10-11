@@ -8,7 +8,7 @@
 
 /**
  * @brief draws the board and adds the pieces
- * 
+ *
  * @param app_object is the chess app
  * @param game_object is the game object
  */
@@ -20,19 +20,19 @@ void draw_board(const SDLStructures &app_object, const game game_object)
     {
         for (int file = 0; file < BOARD_SIZE; file++)
         {
-            // Checking if we should draw a light or dark square
+            // Checking if we should draw a light or dark square on the bord
             bool dark = (rank + file) % 2;
             if (dark)
                 SDL_SetRenderDrawColor(app_object.renderer, 118, 150, 86, 255); // dark square
             else
                 SDL_SetRenderDrawColor(app_object.renderer, 238, 238, 210, 255); // light square
 
-            // Creating a tile
+            // Creating a tile for the chesss board
             SDL_FRect tile = {float(file * TILE_SIZE), float(rank * TILE_SIZE), float(TILE_SIZE), float(TILE_SIZE)};
             SDL_RenderFillRect(app_object.renderer, &tile);
 
-            // Draw piece if present
-            chess_piece piece = board_object.get_piece_at(rank,file);
+            // Draw the chess piece if present
+            chess_piece piece = board_object.get_piece_at(rank, file);
             if (piece.type != NONE)
             {
                 int colorId = (piece.color == WHITE) ? WHITE : BLACK;
@@ -44,12 +44,13 @@ void draw_board(const SDLStructures &app_object, const game game_object)
     }
 }
 
-
 int main(int argc, char *argv[])
 {
     SDLStructures app_structure;
     game current_game;
-
+    current_game.active_player = WHITE;
+    move current_move = {{-1, -1}, {-1,-1}};
+    bool piece_selected = false;
 
     bool running = true;
     SDL_Event event;
@@ -88,6 +89,35 @@ int main(int argc, char *argv[])
             if (event.type == SDL_EVENT_QUIT)
             {
                 running = false;
+            }
+
+            // Handling a mouse click event
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
+            {
+                int mouse_x = event.button.x;
+                int mouse_y = event.button.y;
+
+                int file = mouse_x / TILE_SIZE;
+                int rank = mouse_y / TILE_SIZE;
+
+                if (!piece_selected)
+                {
+                    current_move.from = {rank, file};
+                    piece_selected = true;
+                }
+                else
+                {
+                    current_move.to = {rank, file};
+
+                    if (is_legal_move(current_game.game_board, current_move))
+                    {
+                        current_game.game_board.move_piece(current_move);
+                        current_game.active_player = (current_game.active_player == WHITE) ? BLACK : WHITE;
+                    }
+
+                    piece_selected = false;
+                    current_move = {{-1, -1}, {-1,-1}};
+                }
             }
         }
 
