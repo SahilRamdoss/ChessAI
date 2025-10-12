@@ -7,7 +7,7 @@ using std::abs;
 
 board::board()
 {
-    // Creating the chess board
+    // Creating an empty chess board
     for (int rank = 0; rank < BOARD_SIZE; rank++)
     {
         for (int file = 0; file < BOARD_SIZE; file++)
@@ -55,6 +55,21 @@ board::board()
     this->black_pieces_remaining.push_back(KING);
 }
 
+void board::set_en_passant_target(const square potential_target_pawn)
+{
+    this->en_passant_target = potential_target_pawn;
+}
+
+square board::get_en_passant_target() const
+{
+    return this->en_passant_target;
+}
+
+void board::reset_en_passant_target()
+{
+    this->en_passant_target = {-1,-1};
+}
+
 chess_piece board::get_piece_at(int rank, int file) const
 {
     return this->chess_board[rank][file];
@@ -66,13 +81,18 @@ bool board::move_piece(move current_move)
     square to = current_move.to;
     chess_piece moving_piece = this->chess_board[from.rank][from.file];
 
+    // If an empty tile has been selected we ignore it
     if (moving_piece.type == NONE)
     {
         return false;
     }
 
+    // Difference in rank of the piece position caused by the move
+    int rank_difference = to.rank - from.rank;
+    // Difference in file of the piece position caused by the move
     int file_difference = to.file - from.file;
 
+    // Checking for castling move
     if (moving_piece.type == KING && abs(file_difference) == 2 )
     {
         if (to.file == 6) // Kingside castling
@@ -87,10 +107,56 @@ bool board::move_piece(move current_move)
         }
     }
 
+    // checking for en passant pawn capture
+    if (moving_piece.type == PAWN)
+    {
+        square potential_en_passant_target = this->get_en_passant_target();
+        // Checking if it is a valid en passant attempt
+        if (potential_en_passant_target.rank == to.rank && potential_en_passant_target.file == to.file && abs(file_difference) == 1 && this->chess_board[to.rank][to.file].type == NONE)
+        {
+            // The rank of the pawn which we are trying to capture by en passant
+            int captured_pawn_rank;
+
+            // Getting the rank of the pawn which we are trying to capture by en passant, based on the piece color
+            if (moving_piece.color == WHITE){
+                captured_pawn_rank = to.rank + 1; // Add one as black pawns move in +1 steps
+            }else{
+                captured_pawn_rank = to.rank - 1; // Minus one as white pawns move in -1 steps
+            }
+
+            // Chess piece being captured
+            chess_piece captured_piece = this->chess_board[captured_pawn_rank][to.file];
+            
+            // Must check if it is a pawn of the opposite color before capturing it
+            if (captured_piece.type == PAWN && captured_piece.color != moving_piece.color)
+            {
+                this->chess_board[captured_pawn_rank][to.file] = {NONE,WHITE};
+            }
+        }
+
+        // If the pawn we have moved, has moved by 2 ranks, it is a potential en passant capture
+        if (abs(rank_difference) == 2)
+        {
+            int en_passant_rank = (from.rank + to.rank) / 2; // Getting the rank of where we would capture it, if it is captured
+            this->set_en_passant_target({en_passant_rank,from.file}); // Creating the en passant target
+        }
+    }else{
+        // Resetting the en passant target to nothing if we did move a pawn
+        this->reset_en_passant_target();
+    }
+
+    // If we did not move a pawn by 2 ranks this move, it means there is no en passant target for the next move
+    if (!(moving_piece.type == PAWN && abs(rank_difference) == 2))
+    {
+        this->reset_en_passant_target();
+    }
+
     // Moving the piece to its new destination
     this->chess_board[to.rank][to.file] = moving_piece;
     this->chess_board[from.rank][from.file] = {NONE, WHITE};
 
+    // Keeping track of  whether the pieces which affect the ability of castling have been moved yet since 
+    // the start of the game.
     if (moving_piece.type == KING)
     {
         if (moving_piece.color == WHITE)
@@ -311,25 +377,43 @@ bool is_legal_move(board &the_board, const move &current_move)
     switch (piece.type)
     {
     case PAWN:
-
+        // If pawn moved by 1 rank in its allowed direction, it is acceptable
         if (file_displacement == 0 && rank_displacement == direction && target.type == NONE)
         {
             return true;
         }
 
+        // If pawn tried to move by 2 ranks in its acceptable direction, check if the pawn has been moved since the start
+        // of the game
         if (file_displacement == 0 && rank_displacement == 2 * direction && target.type == NONE)
         {
             int start_rank = (piece.color == WHITE) ? 6 : 1;
 
+            // If the pawn is still at its start rank and there is nothing in its way, it can move by 2 ranks in its allowed direction
             if (current_move.from.rank == start_rank && the_board.get_piece_at(current_move.from.rank + direction, current_move.from.file).type == NONE)
             {
                 return true;
             }
         }
 
+        // Normal pawn capture
         if (abs(file_displacement) == 1 && rank_displacement == direction && target.type != NONE && target.color != piece.color)
         {
             return true;
+        }
+
+        // En passant pawn capture
+        if (abs(file_displacement) == 1 && rank_displacement == direction && target.type == NONE)
+        {
+            square en_passant_target = the_board.get_en_passant_target();
+            if (current_move.to.rank == en_passant_target.rank && current_move.to.file == en_passant_target.file)
+            {
+                chess_piece piece_captured = the_board.get_piece_at((piece.color == WHITE)? current_move.to.rank + 1 : current_move.to.rank -1, current_move.to.file);
+                if (piece_captured.type == PAWN && piece_captured.color != piece.color)
+                {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -342,16 +426,20 @@ bool is_legal_move(board &the_board, const move &current_move)
     case QUEEN:
         return (valid_rook_move(the_board, current_move, rank_displacement, file_displacement) || valid_bishop_move(the_board, current_move, rank_displacement, file_displacement));
     case KING:
+        // If King tries to move by one square, it is acceptable
         if (abs(rank_displacement) <= 1 && abs(file_displacement) <= 1)
         {
             return true;
         }
 
+        // Attempt at castling
         if (rank_displacement == 0 && abs(file_displacement) == 2)
         {
             int from_rank = current_move.from.rank;
+            // Deciding if it is a king side castle or queen side castle depending on the sign of file_displacement
             bool king_side = (file_displacement == 2);
 
+            // Checking if any of the pieces involved in the castle have been moved from the start of the game
             if (piece.color == WHITE)
             {
                 if (the_board.get_white_king_moved() || (king_side && the_board.get_white_rook_h_moved()) || (!king_side && the_board.get_white_rook_a_moved()))
@@ -365,6 +453,7 @@ bool is_legal_move(board &the_board, const move &current_move)
                 }
             }
 
+            // Checking if there are any pieces blocking the castle.
             if (king_side)
             {
                 if (the_board.get_piece_at(from_rank,5).type != NONE || the_board.get_piece_at(from_rank,6).type != NONE)

@@ -80,13 +80,17 @@ private:
     vector<piece_type> black_pieces_remaining;       // Black pieces remaining on the board
     vector<piece_type> white_pieces_lost;            // White pieces removed from the board
     vector<piece_type> black_pieces_lost;            // Black pieces removed from the board
-    bool white_king_moved = false;
-    bool black_king_moved = false;
 
-    bool white_rook_a_moved = false;
-    bool white_rook_h_moved = false;
-    bool black_rook_a_moved = false;
-    bool black_rook_h_moved = false;
+    square en_passant_target = {-1,-1};               // When a pawn moves 2 squares, it is a
+                                                     // potential target for en passant capture
+
+    bool white_king_moved = false; // Flag used to keeo track if the white king moved since the beginning of the game
+    bool black_king_moved = false; // Flag used to keeo track if the black king moved since the beginning of the game
+
+    bool white_rook_a_moved = false; // Flag used to keeo track if the white rook on the a file moved since the beginning of the game
+    bool white_rook_h_moved = false; // Flag used to keeo track if the white rook on the h file moved since the beginning of the game
+    bool black_rook_a_moved = false; // Flag used to keeo track if the black rook on the a file moved since the beginning of the game
+    bool black_rook_h_moved = false; // Flag used to keeo track if the black rook on the h file moved since the beginning of the game
 
 public:
     /**
@@ -94,6 +98,26 @@ public:
      * pieces in their starting positions
      */
     board();
+
+    /**
+     * @brief When a piece moves by 2 places, we store it as a potential en passant target 
+     * for one move
+     * 
+     * @param target is the chess pawn that has been moved by 2 squares 
+     */
+    void set_en_passant_target(const square potential_target_pawn);
+
+    /**
+     * @brief This function returns the potential en passant target
+     * 
+     * @return the en passant potential target
+     */
+    square get_en_passant_target() const;
+
+    /**
+     * @brief This procedure resets the en passant target to nothing on the board
+     */
+    void reset_en_passant_target();
 
     /**
      * @brief method used to get the chess piece at this location on the board
