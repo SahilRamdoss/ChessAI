@@ -1,6 +1,6 @@
 # Chess AI
 
-This is a chess game where players can play against each other or better, they can play against the AI. The AI will have different levels: Adpative, Beginner, Intermediate, Advanced and Impossible, where a player can test his chess skills against this adaptive opponent. Be careful though, the opponent can trash talk you real bad when you are losing!
+This is a chess game where players can play in 1 v/s 1 multiplayer mode or even better, try beating the AI bot. Be careful though, the AI has 1000000 elo! Beating it is more difficult than beating Magnus Carlsen, no cap.
 
 ## 🧩Dependencies 
 
@@ -13,16 +13,28 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
                       Include the json file only in your current directory.
 - **A C++ Compiler** (e.g. g++, clang++)
 
-Make sure SDL3 is properly installed and linked before building.
+Make sure SDL3 is properly installed and linked before building. We also make use of CMake to simplify the compiling process.
+
+### Running the program
+To run the program, execute these commands in order:
+
+cmake -B build
+cmake --build build
+./build/ChessAI
+
 
 ### Compiling command for SDL3
-clang++ Chess-Controller.cpp Chess-View.cpp -o test \
+clang++ src/Chess-Controller.cpp src/Chess-View.cpp -o test \
     -std=c++20 \
+    -I include \
     -I "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\include" \
     -I "C:\SDL3_image-devel-3.2.4-mingw\SDL3_image-3.2.4\x86_64-w64-mingw32\include" \
     -L "C:\SDL3-devel-3.2.24-mingw\SDL3-3.2.24\x86_64-w64-mingw32\lib" \
     -L "C:\SDL3_image-devel-3.2.4-mingw\SDL3_image-3.2.4\x86_64-w64-mingw32\lib" \
     -lSDL3_image -lSDL3
+
+### Command to run the program
+./build/ChessAI
 
 
 ### Compiling command for libcurl and nohmann-json
