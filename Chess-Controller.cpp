@@ -1,5 +1,7 @@
 #include "Chess-Model.h"
 #include <cmath>
+#include <iostream>
+#include <format>
 
 using std::abs;
 
@@ -69,6 +71,7 @@ bool board::move_piece(move current_move)
         return false;
     }
 
+    // Moving the piece to its new destination
     this->chess_board[to.rank][to.file] = moving_piece;
     this->chess_board[from.rank][from.file] = {NONE, WHITE};
 
@@ -77,6 +80,7 @@ bool board::move_piece(move current_move)
 
 string SDLStructures::get_piece_file_name(piece_color color, piece_type type)
 {
+    // Exiting the method if an empty tile has been passed
     if (type == NONE)
     {
         return "";
@@ -87,7 +91,7 @@ string SDLStructures::get_piece_file_name(piece_color color, piece_type type)
     string typeStr = "";
     string path = "";
 
-    // DO NOT CHANGE THE STRING AS IT FOLLOWS THE NAMING CONVENTIONS I USED FOR MY FILES
+    // DO NOT CHANGE THE STRING AS IT FOLLOWS THE NAMING CONVENTIONS I USED FOR MY PNG FILES
     // Getting the type of the piece as a string
     switch (type)
     {
@@ -120,6 +124,7 @@ string SDLStructures::get_piece_file_name(piece_color color, piece_type type)
 
 bool SDLStructures::load_piece_textures()
 {
+    // Getting the texture of every piece.
     for (int piece_color_value = FIRST_COLOR; piece_color_value < LAST_COLOR; piece_color_value++)
     {
         for (int piece_type_value = FIRST_TYPE; piece_type_value < LAST_TYPE; piece_type_value++)
@@ -164,6 +169,7 @@ bool SDLStructures::load_piece_textures()
 
 bool is_legal_move(const board &the_board, const move &current_move)
 {
+    // Getting the chess piece selected
     chess_piece piece = the_board.get_piece_at(current_move.from.rank, current_move.from.file);
 
     // User selected an empty tile
@@ -172,23 +178,30 @@ bool is_legal_move(const board &the_board, const move &current_move)
         return false;
     }
 
+    // Calculating the displacement of the piece by the move made in terms of the rank displacement and file displacement
     int rank_displacement = current_move.to.rank - current_move.from.rank;
     int file_displacement = current_move.to.file - current_move.from.file;
 
+    // When user has double clicked on a piece, we just ignore it
     if (rank_displacement == 0 && file_displacement == 0)
     {
         return false;
     }
 
+    // Getting the piece at the destination of the move made
     chess_piece target = the_board.get_piece_at(current_move.to.rank, current_move.to.file);
 
+    // If the target tile contains a piece of the same color, this is an illegal move
+    // as we cannot capture our own pieces
     if (target.type != NONE && target.color == piece.color)
     {
         return false;
     }
 
+    // White pieces usually move up while black pieces usually move down
     int direction = (piece.color == WHITE) ? -1 : 1;
 
+    // Checking if move made is legal based on the type of the piece
     switch (piece.type)
     {
     case PAWN:
@@ -231,6 +244,7 @@ bool is_legal_move(const board &the_board, const move &current_move)
 
 bool valid_rook_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement)
 {
+    // A rook cannot move diagonally
     if (rank_displacement != 0 && file_displacement != 0)
     {
         return false;
@@ -238,6 +252,7 @@ bool valid_rook_move(const board &the_board, const move &current_move, int rank_
     int single_step_rank;
     int single_step_file;
 
+    // Getting the step directions
     if (rank_displacement == 0)
     {
         single_step_rank = 0;
@@ -269,11 +284,13 @@ bool valid_rook_move(const board &the_board, const move &current_move, int rank_
 
 bool valid_bishop_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement)
 {
+    // The path moved by a bishop must always be the hypotenuse of an isosceles triangle
     if (abs(rank_displacement) != abs(file_displacement))
     {
         return false;
     }
 
+    // Getting the step directions
     int single_step_rank = (rank_displacement > 0) ? 1 : -1;
     int single_step_file = (file_displacement > 0) ? 1 : -1;
 
@@ -285,6 +302,9 @@ bool check_for_obstruction(const board &the_board, const move &current_move, int
     int new_rank = current_move.from.rank + single_step_rank;
     int new_file = current_move.from.file + single_step_file;
 
+    // We just move the piece step by step in the direction of its final displacement and check each time
+    // if it meets another piece in the middle of its path before reaching its destination, because if it does, it means
+    // that the move is illegal, as it consists of jumping over a piece.
     while (new_rank != current_move.to.rank || new_file != current_move.to.file)
     {
         if (the_board.get_piece_at(new_rank, new_file).type != NONE)
