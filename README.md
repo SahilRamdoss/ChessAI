@@ -15,12 +15,15 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
 
 Make sure SDL3 is properly installed and linked before building. We also make use of CMake to simplify the compiling process.
 
-### Running the program
-To run the program, execute these commands in order:
+## 🚀 Running the Program
 
-cmake -B build
-cmake --build build
-./build/ChessAI
+Run the following commands to build and start **ChessAI**:
+
+> 💡 **Tip:** Make sure you have CMake installed before running these commands.
+
+cmake -B build <br>
+cmake --build build <br>
+./build/ChessAI <br>
 
 
 ### Compiling command for SDL3
