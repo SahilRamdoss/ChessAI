@@ -71,11 +71,117 @@ bool board::move_piece(move current_move)
         return false;
     }
 
+    int file_difference = to.file - from.file;
+
+    if (moving_piece.type == KING && abs(file_difference) == 2 )
+    {
+        if (to.file == 6) // Kingside castling
+        {
+            this->chess_board[from.rank][5] = this->chess_board[from.rank][BOARD_SIZE-1];
+            this->chess_board[from.rank][BOARD_SIZE-1] = {NONE, WHITE};
+        }
+        else if (to.file == 2) // Queen side castling
+        {
+            this->chess_board[from.rank][3] = this->chess_board[from.rank][0];
+            this->chess_board[from.rank][0] = {NONE,WHITE};
+        }
+    }
+
     // Moving the piece to its new destination
     this->chess_board[to.rank][to.file] = moving_piece;
     this->chess_board[from.rank][from.file] = {NONE, WHITE};
 
+    if (moving_piece.type == KING)
+    {
+        if (moving_piece.color == WHITE)
+        {
+            set_white_king_moved(true);
+        }else{
+            set_black_king_moved(true);
+        }
+    }else if (moving_piece.type == ROOK)
+    {
+        if (moving_piece.color == WHITE)
+        {
+            if (from.rank == BOARD_SIZE-1 && from.file == 0)
+            {
+                set_white_rook_a_moved(true);
+            }else if (from.rank == BOARD_SIZE-1 && from.file == BOARD_SIZE-1)
+            {
+                set_white_rook_h_moved(true);
+            }
+        }else{
+            if (from.rank == 0 && from.file == 0)
+            {
+                set_black_rook_a_moved(true);
+            }else if (from.rank == 0 && from.file == 7)
+            {
+                set_black_rook_h_moved(true);
+            }
+        }
+    }
+
     return true;
+}
+
+void board::set_white_king_moved(bool truth)
+{
+    this->white_king_moved = truth;
+}
+
+bool board::get_white_king_moved() const
+{
+    return this->white_king_moved;
+}
+
+void board::set_black_king_moved(bool truth)
+{
+    this->black_king_moved = truth;
+}
+
+bool board::get_black_king_moved() const
+{
+    return this->black_king_moved;
+}
+
+void board::set_white_rook_a_moved(bool truth)
+{
+    this->white_rook_a_moved = truth;
+}
+
+bool board::get_white_rook_a_moved() const
+{
+    return this->white_rook_a_moved;
+}
+
+void board::set_white_rook_h_moved(bool truth)
+{
+    this->white_rook_h_moved = truth;
+}
+
+bool board::get_white_rook_h_moved() const
+{
+    return this->white_rook_h_moved;
+}
+
+void board::set_black_rook_a_moved(bool truth)
+{
+    this->black_rook_a_moved = truth;
+}
+
+bool board::get_black_rook_a_moved() const
+{
+    return this->black_rook_a_moved;
+}
+
+void board::set_black_rook_h_moved(bool truth)
+{
+    this->black_rook_h_moved = truth;
+}
+
+bool board::get_black_rook_h_moved() const
+{
+    return this->black_rook_h_moved;
 }
 
 string SDLStructures::get_piece_file_name(piece_color color, piece_type type)
@@ -167,7 +273,7 @@ bool SDLStructures::load_piece_textures()
     return true;
 }
 
-bool is_legal_move(const board &the_board, const move &current_move)
+bool is_legal_move(board &the_board, const move &current_move)
 {
     // Getting the chess piece selected
     chess_piece piece = the_board.get_piece_at(current_move.from.rank, current_move.from.file);
@@ -236,7 +342,47 @@ bool is_legal_move(const board &the_board, const move &current_move)
     case QUEEN:
         return (valid_rook_move(the_board, current_move, rank_displacement, file_displacement) || valid_bishop_move(the_board, current_move, rank_displacement, file_displacement));
     case KING:
-        return (abs(rank_displacement) <= 1 && abs(file_displacement) <= 1);
+        if (abs(rank_displacement) <= 1 && abs(file_displacement) <= 1)
+        {
+            return true;
+        }
+
+        if (rank_displacement == 0 && abs(file_displacement) == 2)
+        {
+            int from_rank = current_move.from.rank;
+            bool king_side = (file_displacement == 2);
+
+            if (piece.color == WHITE)
+            {
+                if (the_board.get_white_king_moved() || (king_side && the_board.get_white_rook_h_moved()) || (!king_side && the_board.get_white_rook_a_moved()))
+                {
+                    return false;
+                }
+            }else{
+                if (the_board.get_black_king_moved() || (king_side && the_board.get_black_rook_h_moved()) || (!king_side && the_board.get_black_rook_a_moved()))
+                {
+                    return false;
+                }
+            }
+
+            if (king_side)
+            {
+                if (the_board.get_piece_at(from_rank,5).type != NONE || the_board.get_piece_at(from_rank,6).type != NONE)
+                {
+                    return false;
+                }
+            }else{
+                if (the_board.get_piece_at(from_rank,1).type != NONE || the_board.get_piece_at(from_rank,2).type != NONE || the_board.get_piece_at(from_rank,3).type != NONE)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+
     default:
         throw "Unhandled piece type";
     }

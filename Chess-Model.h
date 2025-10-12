@@ -80,6 +80,13 @@ private:
     vector<piece_type> black_pieces_remaining;       // Black pieces remaining on the board
     vector<piece_type> white_pieces_lost;            // White pieces removed from the board
     vector<piece_type> black_pieces_lost;            // Black pieces removed from the board
+    bool white_king_moved = false;
+    bool black_king_moved = false;
+
+    bool white_rook_a_moved = false;
+    bool white_rook_h_moved = false;
+    bool black_rook_a_moved = false;
+    bool black_rook_h_moved = false;
 
 public:
     /**
@@ -108,6 +115,32 @@ public:
      * made on an empty tile
      */
     bool move_piece(move current_move);
+
+    // Setters and getters for each of the boolean attributes of the class
+    void set_white_king_moved(bool truth);
+
+    bool get_white_king_moved() const;
+
+    void set_black_king_moved(bool truth);
+
+    bool get_black_king_moved() const;
+
+    void set_white_rook_a_moved(bool truth);
+
+    bool get_white_rook_a_moved() const;
+
+    void set_white_rook_h_moved(bool truth);
+
+    bool get_white_rook_h_moved() const;
+
+    void set_black_rook_a_moved(bool truth);
+
+    bool get_black_rook_a_moved() const;
+
+    void set_black_rook_h_moved(bool truth);
+
+    bool get_black_rook_h_moved() const;
+
 };
 
 /**
@@ -159,10 +192,10 @@ public:
  * @return true if the move performed is a legal one and returns false if the user
  * selected an empty tile or performed an illegal move
  */
-bool is_legal_move(const board &the_board, const move &current_move);
+bool is_legal_move(board &the_board, const move &current_move);
 
 /**
- * @brief This function checks if the move made by the user is a valid one according to chess rules
+ * @brief This function checks if the move made by the user on a rook is a valid one according to chess rules
  * 
  * @param the_board is the chess board object
  * @param current_move is the move performed on the rook
