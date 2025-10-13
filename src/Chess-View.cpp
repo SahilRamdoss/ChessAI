@@ -46,14 +46,15 @@ void draw_board(const SDLStructures &app_object, const game game_object)
 
 int main(int argc, char *argv[])
 {
-    SDLStructures app_structure; // The SDL APP
-    game current_game; // The chess game
-    move current_move = {{-1, -1}, {-1,-1}}; // Move made by the current player on the board
-    bool piece_selected = false; // Flag used to keep track if it is the first click on the board or the second click
+    SDLStructures app_structure;              // The SDL APP
+    game current_game;                        // The chess game
+    move current_move = {{-1, -1}, {-1, -1}}; // Move made by the current player on the board
+    bool piece_selected = false;              // Flag used to keep track if it is the first click on the board or the second click
     chess_piece piece;
+    bool game_ended = false; // Used to know when a checkmate is reached
 
     bool running = true; // Flag used to know when user quites the app
-    SDL_Event event; // Used to store an SDL event in the SDL event queue
+    SDL_Event event;     // Used to store an SDL event in the SDL event queue
 
     // Initialising SDL3
     if (!SDL_Init(SDL_INIT_VIDEO))
@@ -94,7 +95,7 @@ int main(int argc, char *argv[])
             }
 
             // Handling a mouse click event
-            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT && !game_ended)
             {
                 // Get window coordinates of where screen was clicked
                 int mouse_x = event.button.x;
@@ -126,11 +127,22 @@ int main(int argc, char *argv[])
                         current_game.game_board.move_piece(current_move);
                         // Switch to the other player's turn.
                         current_game.active_player = (current_game.active_player == WHITE) ? BLACK : WHITE;
+
+                        if (current_game.checkmate(WHITE))
+                        {
+                            game_ended = true;
+                            current_game.outcome = BLACK_WIN;
+                        }
+                        else if (current_game.checkmate(BLACK))
+                        {
+                            game_ended = true;
+                            current_game.outcome == WHITE_WIN;
+                        }
                     }
 
                     // Setting the flag to false and erasing the move made
                     piece_selected = false;
-                    current_move = {{-1, -1}, {-1,-1}};
+                    current_move = {{-1, -1}, {-1, -1}};
                 }
             }
         }

@@ -1,6 +1,5 @@
 #include "Chess-Model.h"
 #include <cmath>
-#include <iostream>
 #include <format>
 
 using std::abs;
@@ -362,7 +361,6 @@ bool game::checkmate(piece_color king_color)
             }
         }
     }
-
     return true;
 }
 
