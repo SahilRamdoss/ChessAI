@@ -13,7 +13,6 @@ const int BOARD_SIZE = 8;                             // The number of files/ran
 constexpr int WINDOW_WIDTH = BOARD_SIZE * TILE_SIZE;  // Getting the width of the window
 constexpr int WINDOW_HEIGHT = BOARD_SIZE * TILE_SIZE; // Getting the height of the window
 
-
 /**
  * @brief enum used to represent the type of the chess piece
  */
@@ -43,6 +42,17 @@ enum piece_color
 };
 
 /**
+ * @brief enum used to represent the outcome of the game.
+ */
+enum game_outcome
+{
+    WHITE_WIN,
+    BLACK_WIN,
+    DRAW,
+    UNDETERMINED
+};
+
+/**
  * @brief The struct is used to represent each chess piece
  */
 struct chess_piece
@@ -66,7 +76,7 @@ struct square
 struct move
 {
     square from; // The tile from which the piece is moved
-    square to; // The tile to which the piece is moved
+    square to;   // The tile to which the piece is moved
 };
 
 /**
@@ -81,8 +91,8 @@ private:
     vector<piece_type> white_pieces_lost;            // White pieces removed from the board
     vector<piece_type> black_pieces_lost;            // Black pieces removed from the board
 
-    square en_passant_target = {-1,-1};               // When a pawn moves 2 squares, it is a
-                                                     // potential target for en passant capture
+    square en_passant_target = {-1, -1}; // When a pawn moves 2 squares, it is a
+                                         // potential target for en passant capture
 
     bool white_king_moved = false; // Flag used to keeo track if the white king moved since the beginning of the game
     bool black_king_moved = false; // Flag used to keeo track if the black king moved since the beginning of the game
@@ -100,16 +110,16 @@ public:
     board();
 
     /**
-     * @brief When a piece moves by 2 places, we store it as a potential en passant target 
+     * @brief When a piece moves by 2 places, we store it as a potential en passant target
      * for one move
-     * 
-     * @param target is the chess pawn that has been moved by 2 squares 
+     *
+     * @param target is the chess pawn that has been moved by 2 squares
      */
     void set_en_passant_target(const square potential_target_pawn);
 
     /**
      * @brief This function returns the potential en passant target
-     * 
+     *
      * @return the en passant potential target
      */
     square get_en_passant_target() const;
@@ -130,15 +140,18 @@ public:
     chess_piece get_piece_at(int rank, int file) const;
 
     /**
-     * @brief Checks if the move made is on a piece and if yes, it moves the piece to its new
+     * @brief It moves the piece to its new
      * position on the board
-     * 
+     *
      * @param current_move is the move made by the player on the board
-     * 
-     * @return true if the move has been made successfully or false if the the move was being
-     * made on an empty tile
      */
-    bool move_piece(move current_move);
+    void move_piece(const move &current_move);
+
+    bool is_square_attacked(square tile, piece_color attacker_color);
+
+    square find_the_king(piece_color king_color);
+
+    bool king_in_check(piece_color king_color);
 
     // Setters and getters for each of the boolean attributes of the class
     void set_white_king_moved(bool truth);
@@ -164,19 +177,31 @@ public:
     void set_black_rook_h_moved(bool truth);
 
     bool get_black_rook_h_moved() const;
-
 };
 
 /**
  * @brief This struct is used to store the details for a particular game
  */
-struct game
+class game
 {
+    public:
     board game_board;          // Used to store the state of the board
     piece_color active_player; // Used to store the colour of the current player
-    int outcome;               // Used to store who won the game. (-1 for black, 0 for draw, 1 for white)
-};
+    game_outcome outcome;               // Used to store who won the game.
 
+    public: 
+    // Constructor for board class
+    game();
+
+    /**
+     * @brief The method checks if there is a checkmate on the board or not
+     * 
+     * @param king_color is the color of the king which is potentially checkmated
+     * 
+     * @return true if there is a check mate and false otherwise
+     */
+    bool checkmate(piece_color king_color);
+};
 
 // Used to group all the SDL objects used and the actions performed on them
 class SDLStructures
@@ -197,7 +222,7 @@ public:
      * @return the path
      */
     string get_piece_file_name(piece_color color, piece_type type);
-    
+
     /**
      * @brief This procedure load all textures for our chess pieces into piece_textures array
      *
@@ -209,45 +234,46 @@ public:
 /**
  * @brief This function checks if the user selected a piece or an empty tile. If the user has selected a
  * piece, it then checks if the move performed on the piece is a valid one according following chess rules.
- * 
+ *
  * @param the_board is the chess board object
  * @param current_move is the current move played by the player on the board
- * 
+ * @param consider_attacks_only is a flag used to indicate whether we should 
+ * consider only the attacking behaviour of pieces
+ *
  * @return true if the move performed is a legal one and returns false if the user
  * selected an empty tile or performed an illegal move
  */
-bool is_legal_move(board &the_board, const move &current_move);
+bool is_legal_move(board &the_board, const move &current_move, bool consider_attacks_only);
 
 /**
  * @brief This function checks if the move made by the user on a rook is a valid one according to chess rules
- * 
+ *
  * @param the_board is the chess board object
  * @param current_move is the move performed on the rook
  * @param rank_displacement is the displacement of the rook in terms of ranks by the current move
  * @param file_displacement is the displacement of the rook in terms of files by the current move
- * 
+ *
  * @return true if the move performed on the rook is a legal one and returns false otherwise
  */
 bool valid_rook_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement);
 
 /**
  * @brief This function checks if the move made by the user on a bishop is a legal one
- * 
+ *
  * @param the_board is the chess board object
  * @param current_move is the current move played by the player on the bishop
  * @param rank_displacement is the displacement of the bishop in terms of ranks by the current move
  * @param file_displacement is the displacement of the bishop in terms of files by the current move
- * 
+ *
  * @return true if the move performed on the bishop is a legal one and returns false otherwise
  */
 bool valid_bishop_move(const board &the_board, const move &current_move, int rank_displacement, int file_displacement);
 
-
 /**
  * @brief This function checks if when a piece is moved, there is not any other piece in the middle of its path(not destination), as this
  * would make the move illegal. A piece cannot "jump" over another piece
- * 
- * @param the_board is the board object 
+ *
+ * @param the_board is the board object
  * @param current_move is the move played by the player on the piece
  * @param single_step_rank is the rank displacement of the piece when it is moved one step closer to its destination, in direction
  * of its displacement
@@ -255,5 +281,18 @@ bool valid_bishop_move(const board &the_board, const move &current_move, int ran
  * of its displacement
  */
 bool check_for_obstruction(const board &the_board, const move &current_move, int single_step_rank, int single_step_file);
+
+/**
+ * @brief This function returns true if the user played a valid move or false if the user either tried to move a piece incorrect or 
+ * tried playing an invalid move when his king is in check
+ * 
+ * @param the_board is the chess board object
+ * @param current_move is the moved being played on the board
+ * @param valid_move is a flag used to indicate if the piece is being moved according to the 
+ * rules of its type or not
+ * 
+ * @return true if the piece is moved correctly and the move is a valid one if the king is in check, or returns false otherwise
+ */
+bool valid_move_simulated(board &the_board, const move current_move, bool valid_move);
 
 #endif

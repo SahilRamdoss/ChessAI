@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
 {
     SDLStructures app_structure; // The SDL APP
     game current_game; // The chess game
-    current_game.active_player = WHITE; // Setting current active player to WHITE at the start of the game
     move current_move = {{-1, -1}, {-1,-1}}; // Move made by the current player on the board
     bool piece_selected = false; // Flag used to keep track if it is the first click on the board or the second click
+    chess_piece piece;
 
     bool running = true; // Flag used to know when user quites the app
     SDL_Event event; // Used to store an SDL event in the SDL event queue
@@ -109,6 +109,8 @@ int main(int argc, char *argv[])
                 {
                     // Get the tile where first click is made
                     current_move.from = {rank, file};
+                    // Get the piece being moved
+                    piece = current_game.game_board.get_piece_at(rank, file);
                     // Setting flag to true to indicate the first click has been made
                     piece_selected = true;
                 }
@@ -118,9 +120,9 @@ int main(int argc, char *argv[])
                     current_move.to = {rank, file};
 
                     // Checks if the click corresponded to moving a piece and checks if the move made is allowed
-                    if (is_legal_move(current_game.game_board, current_move))
+                    if (is_legal_move(current_game.game_board, current_move, false) && piece.color == current_game.active_player)
                     {
-                        // Moves the piece to the new position
+                        // Tries moving the piece to the new position
                         current_game.game_board.move_piece(current_move);
                         // Switch to the other player's turn.
                         current_game.active_player = (current_game.active_player == WHITE) ? BLACK : WHITE;
