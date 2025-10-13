@@ -12,6 +12,7 @@ This project is written in C++ version 20.1.8 and uses the following libraries:
 - **nlohmann-json** - for working with the JSON format returned by Lichess REST API.
                       Include the json file only in your current directory.
 - **A C++ Compiler** (e.g. g++, clang++)
+- **Cmake** - used to build, compile and run the program. Also responsible for downloading all dependencies.
 
 Make sure SDL3 is properly installed and linked before building. We also make use of CMake to simplify the compiling process.
 
