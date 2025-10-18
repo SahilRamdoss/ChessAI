@@ -93,10 +93,6 @@ class board
 {
 private:
     chess_piece chess_board[BOARD_SIZE][BOARD_SIZE]; // The state of the board
-    vector<piece_type> white_pieces_remaining;       // White pieces reamining on the board
-    vector<piece_type> black_pieces_remaining;       // Black pieces remaining on the board
-    vector<piece_type> white_pieces_lost;            // White pieces removed from the board
-    vector<piece_type> black_pieces_lost;            // Black pieces removed from the board
 
     square en_passant_target = {-1, -1}; // When a pawn moves 2 squares, it is a
                                          // potential target for en passant capture
@@ -227,6 +223,7 @@ public:
  */
 class game
 {
+    // Left to be public as making it private heavily overcomplicates code.
     public:
     board game_board;          // Used to store the state of the board
     piece_color active_player; // Used to store the colour of the current player

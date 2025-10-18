@@ -19,39 +19,21 @@ board::board()
     for (int file = 0; file < BOARD_SIZE; file++)
     {
         this->chess_board[BOARD_SIZE - 2][file] = {PAWN, WHITE};
-        this->white_pieces_remaining.push_back(PAWN);
         this->chess_board[1][file] = {PAWN, BLACK};
-        this->black_pieces_remaining.push_back(PAWN);
     }
 
     // Placing the other pieces
     this->chess_board[BOARD_SIZE - 1][0] = this->chess_board[BOARD_SIZE - 1][7] = {ROOK, WHITE};
-    this->white_pieces_remaining.push_back(ROOK);
-    this->white_pieces_remaining.push_back(ROOK);
     this->chess_board[BOARD_SIZE - 1][1] = this->chess_board[BOARD_SIZE - 1][6] = {KNIGHT, WHITE};
-    this->white_pieces_remaining.push_back(KNIGHT);
-    this->white_pieces_remaining.push_back(KNIGHT);
     this->chess_board[BOARD_SIZE - 1][2] = this->chess_board[BOARD_SIZE - 1][5] = {BISHOP, WHITE};
-    this->white_pieces_remaining.push_back(BISHOP);
-    this->white_pieces_remaining.push_back(BISHOP);
     this->chess_board[BOARD_SIZE - 1][3] = {QUEEN, WHITE};
-    this->white_pieces_remaining.push_back(QUEEN);
     this->chess_board[BOARD_SIZE - 1][4] = {KING, WHITE};
-    this->white_pieces_remaining.push_back(KING);
-
+    
     this->chess_board[0][0] = this->chess_board[0][7] = {ROOK, BLACK};
-    this->black_pieces_remaining.push_back(ROOK);
-    this->black_pieces_remaining.push_back(ROOK);
     this->chess_board[0][1] = this->chess_board[0][6] = {KNIGHT, BLACK};
-    this->black_pieces_remaining.push_back(KNIGHT);
-    this->black_pieces_remaining.push_back(KNIGHT);
     this->chess_board[0][2] = this->chess_board[0][5] = {BISHOP, BLACK};
-    this->black_pieces_remaining.push_back(BISHOP);
-    this->black_pieces_remaining.push_back(BISHOP);
     this->chess_board[0][3] = {QUEEN, BLACK};
-    this->black_pieces_remaining.push_back(QUEEN);
     this->chess_board[0][4] = {KING, BLACK};
-    this->black_pieces_remaining.push_back(KING);
 }
 
 void board::set_en_passant_target(const square potential_target_pawn)
