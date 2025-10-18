@@ -74,6 +74,11 @@ chess_piece board::get_piece_at(int rank, int file) const
     return this->chess_board[rank][file];
 }
 
+void board::set_piece_at(int rank, int file, chess_piece piece)
+{
+    this->chess_board[rank][file] = piece;
+}
+
 void board::move_piece(const move &current_move)
 {
     square from = current_move.from;
@@ -100,7 +105,7 @@ void board::move_piece(const move &current_move)
         }
     }
 
-    // checking for en passant pawn capture
+    // If a pawn has moved two ranks, we create an en-passant target for the next move
     if (moving_piece.type == PAWN)
     {
         square potential_en_passant_target = this->get_en_passant_target();
@@ -197,6 +202,8 @@ bool board::is_square_attacked(square tile, piece_color attacker_color)
 {
     move possible_check_move;
 
+    // Looping through every tile and if it contains a piece of our specified color,
+    // check whether that piece can attack the given square. If there is an least one, return true
     for (int rank = 0; rank < BOARD_SIZE; rank++)
     {
         for (int file = 0; file < BOARD_SIZE; file++)
@@ -221,6 +228,7 @@ bool board::is_square_attacked(square tile, piece_color attacker_color)
 
 square board::find_the_king(piece_color king_color)
 {
+    // Loop through every tile till we come across our king of the given color
     for (int rank = 0; rank < BOARD_SIZE; rank++)
     {
         for (int file = 0; file < BOARD_SIZE; file++)
@@ -242,6 +250,7 @@ bool board::king_in_check(piece_color king_color)
     square king_square = this->find_the_king(king_color);
     piece_color opponent_color;
 
+    // Error checking
     if (king_square.rank == -1 || king_square.file == -1)
     {
         return false;
@@ -256,6 +265,7 @@ bool board::king_in_check(piece_color king_color)
         opponent_color = WHITE;
     }
 
+    // If king is being attacked, it is in check
     return is_square_attacked(king_square, opponent_color);
 }
 

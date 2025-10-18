@@ -23,9 +23,9 @@ void draw_board(const SDLStructures &app_object, const game game_object)
             // Checking if we should draw a light or dark square on the bord
             bool dark = (rank + file) % 2;
             if (dark)
-                SDL_SetRenderDrawColor(app_object.renderer, 118, 150, 86, 255); // dark square
+                SDL_SetRenderDrawColor(app_object.renderer, 196, 135, 135, 255); // dark square
             else
-                SDL_SetRenderDrawColor(app_object.renderer, 238, 238, 210, 255); // light square
+                SDL_SetRenderDrawColor(app_object.renderer, 235, 215, 215, 255); // light square
 
             // Creating a tile for the chesss board
             SDL_FRect tile = {float(file * TILE_SIZE), float(rank * TILE_SIZE), float(TILE_SIZE), float(TILE_SIZE)};
@@ -44,6 +44,87 @@ void draw_board(const SDLStructures &app_object, const game game_object)
     }
 }
 
+piece_type select_promotion_piece(const SDLStructures &app_object, const game &game_object, piece_color color)
+{
+    bool piece_selected = false; // Used to keep track whether a piece has been selected or not
+    bool quit = false; // Flag to know if user wants to quit the game
+    SDL_Event event; // Used to store an SDL event in the SDL event queue
+
+    float x_top_left_corner = float(PROMOTION_BLOCK_X_TOP_LEFT * TILE_SIZE); // x-coordinate of top-left corner of promotion block
+    float y_top_left_corner = float(((color == WHITE) ? PROMOTION_BLOCK_Y_TOP_LEFT_WHITE : PROMOTION_BLOCK_Y_TOP_LEFT_BLACK) * TILE_SIZE);// y-coordinate of top-left corner of promotion block
+    float block_width = float(TILE_SIZE * PROMOTION_BLOCK_WIDTH_TILE); // Width of the promotion block
+    float block_height = float(TILE_SIZE); // Height of promotion block
+
+    // 
+    /**
+     * @brief draw the promotion block
+     * 
+     * Use of lambda function to create this sub-code which is needed inside the select_promotion_piece procedure.
+     * This lambda function heavily depends on many of the parameters and variables used in the select_promotion_piece.
+     * Hence to simplify the code, we make use of the lambda function
+     * We capture all outside variables as reference
+     */
+    auto display_promotion_block = [&]()
+    {
+        int colorId = color;
+        int typeId = KNIGHT;
+        SDL_FRect block = {x_top_left_corner, y_top_left_corner, block_width, block_height};
+        SDL_SetRenderDrawColor(app_object.renderer, 209, 202, 202, 255);
+        SDL_RenderFillRect(app_object.renderer, &block);
+
+        for (int x_coor = PROMOTION_BLOCK_X_TOP_LEFT; x_coor < PROMOTION_BLOCK_X_TOP_LEFT + PROMOTION_BLOCK_WIDTH_TILE; x_coor++)
+        {
+            SDL_FRect dst = {float(x_coor * TILE_SIZE), y_top_left_corner, float(TILE_SIZE), float(TILE_SIZE)};
+            SDL_RenderTexture(app_object.renderer, app_object.piece_textures[colorId][typeId], nullptr, &dst);
+            typeId++;
+        }
+    };
+
+    while (!piece_selected)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            // For safety in case an issue happens when selecting the piece
+            if (event.type == SDL_EVENT_QUIT)
+            {
+                quit = true;
+                break;
+            }
+
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
+            {
+                int mouse_x = event.button.x;
+                int mouse_y = event.button.y;
+
+                // Checking if mouse click is made inside the promotion block
+                if (mouse_x < x_top_left_corner || mouse_x > (x_top_left_corner + block_width) || mouse_y < y_top_left_corner || mouse_y > (y_top_left_corner + TILE_SIZE))
+                {
+                    continue;
+                }
+                else
+                {
+                    // Get the piece selected based on order of the tile selected
+                    int tile_number = ((mouse_x - x_top_left_corner) / TILE_SIZE) + 1;
+                    return (piece_type)tile_number;
+                }
+            }
+        }
+
+        // If quit button is pressed, exit the game
+        if (quit)
+        {
+            break;
+        }
+
+        // Re-drawing the board and the block every frame
+        draw_board(app_object, game_object);
+        display_promotion_block();
+        SDL_RenderPresent(app_object.renderer);
+    }
+
+    return NONE;
+}
+
 int main(int argc, char *argv[])
 {
     SDLStructures app_structure;              // The SDL APP
@@ -52,6 +133,7 @@ int main(int argc, char *argv[])
     bool piece_selected = false;              // Flag used to keep track if it is the first click on the board or the second click
     chess_piece piece;
     bool game_ended = false; // Used to know when a checkmate is reached
+    piece_type promoted_type = NONE;
 
     bool running = true; // Flag used to know when user quites the app
     SDL_Event event;     // Used to store an SDL event in the SDL event queue
@@ -125,9 +207,22 @@ int main(int argc, char *argv[])
                     {
                         // Tries moving the piece to the new position
                         current_game.game_board.move_piece(current_move);
+
+                        // Checks is a pawn must be promoted
+                        if (piece.type == PAWN)
+                        {
+                            if ((piece.color == WHITE && current_move.to.rank == 0) || (piece.color == BLACK && current_move.to.rank == BOARD_SIZE - 1))
+                            {
+                                // Create block for user to choose piece and allow him to choose the piece
+                                promoted_type = select_promotion_piece(app_structure, current_game, piece.color);
+                                // Replacing the pawn by the promoted piece
+                                current_game.game_board.set_piece_at(current_move.to.rank, current_move.to.file, {promoted_type, piece.color});
+                            }
+                        }
                         // Switch to the other player's turn.
                         current_game.active_player = (current_game.active_player == WHITE) ? BLACK : WHITE;
 
+                        // Checking if we have reached checkmate
                         if (current_game.checkmate(WHITE))
                         {
                             game_ended = true;
@@ -164,7 +259,7 @@ int main(int argc, char *argv[])
             SDL_DestroyTexture(app_structure.piece_textures[color_index][type_index]);
         }
     }
-
+    // Clean up the renderer and window
     SDL_DestroyRenderer(app_structure.renderer);
     SDL_DestroyWindow(app_structure.window);
     SDL_Quit();

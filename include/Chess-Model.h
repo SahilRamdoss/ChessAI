@@ -12,6 +12,13 @@ const int TILE_SIZE = 80;                             // Size of each square on 
 const int BOARD_SIZE = 8;                             // The number of files/ranks on the chess board
 constexpr int WINDOW_WIDTH = BOARD_SIZE * TILE_SIZE;  // Getting the width of the window
 constexpr int WINDOW_HEIGHT = BOARD_SIZE * TILE_SIZE; // Getting the height of the window
+const int PROMOTION_BLOCK_X_TOP_LEFT = 2;             // Rank number of the top left corner of the promotion block
+const int PROMOTION_BLOCK_Y_TOP_LEFT_WHITE = 4;       // File number of the top left corner of the promotion block
+                                                      // for white pieces
+const int PROMOTION_BLOCK_Y_TOP_LEFT_BLACK = 3;       // File number of the top left corner of the promotion block
+                                                      // for black pieces
+const int PROMOTION_BLOCK_WIDTH_TILE = 4;             // The width of the promotion block in terms of tiles.
+
 
 /**
  * @brief enum used to represent the type of the chess piece
@@ -140,20 +147,56 @@ public:
     chess_piece get_piece_at(int rank, int file) const;
 
     /**
+     * @brief method used to change the piece on the board at a particular tile
+     * 
+     * @param rank is the rank of the tile
+     * @param file is the file of the tile
+     * @param piece is the chess piece to place on that tile
+     * 
+     * @return;
+     */
+    void set_piece_at(int rank, int file, chess_piece piece);
+
+    /**
      * @brief It moves the piece to its new
      * position on the board
      *
-     * @param current_move is the move made by the player on the board
+     * @param current_move is the move made by the player on the board. It has already been
+     * confirmed to be a legal move
      */
     void move_piece(const move &current_move);
 
+    /**
+     * @brief function returns whether a piece on the board can attack the given tile
+     * 
+     * @param tile is the tile to check if there is an attack on
+     * @param attacker_color is the color of the piece which should be attacking
+     * 
+     * @return true if the tile can be attacked or false otherwise.
+     */
     bool is_square_attacked(square tile, piece_color attacker_color);
 
+    /**
+     * @brief This function returns the square/tile on which the king of the given color is found
+     * 
+     * @param king_color is the color of the king we are searching for
+     * 
+     * @return the square on which that king is found
+     */
     square find_the_king(piece_color king_color);
 
+    /**
+     * @brief This function checks if the king of the mentioned color is in check
+     * 
+     * @param king_color is the color of the king which we are verifying if it is in check
+     * 
+     * @return true if the king of the mentioned color is in check or false otherwise
+     */
     bool king_in_check(piece_color king_color);
 
-    // Setters and getters for each of the boolean attributes of the class
+    // Setters and getters for each of the boolean attributes of the class. For the setters
+    // the parameter truth is simply a boolean value used to set the corresponding attribute of the class
+    // board to that truth value. The method names are self-explanatory in terms of  which attributes they act on
     void set_white_king_moved(bool truth);
 
     bool get_white_king_moved() const;
@@ -187,7 +230,7 @@ class game
     public:
     board game_board;          // Used to store the state of the board
     piece_color active_player; // Used to store the colour of the current player
-    game_outcome outcome;               // Used to store who won the game.
+    game_outcome outcome;      // Used to store who won the game.
 
     public: 
     // Constructor for board class
