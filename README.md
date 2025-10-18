@@ -22,6 +22,3 @@ Run the following commands to build and start **ChessAI**:
 cmake -B build <br>
 cmake --build build <br>
 ./build/ChessAI <br>
-
-### Command to run the program
-./build/ChessAI
