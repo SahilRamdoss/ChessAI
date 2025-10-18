@@ -43,15 +43,6 @@ else()
     message(STATUS "Using local SDL3_image installation.")
 endif()
 
-# libcurl setup
-find_package(CURL QUIET)
-if (NOT CURL_FOUND)
-    message(STATUS "Getting libcurl from GitHub...")
-    include_dependency(curl https://github.com/curl/curl.git curl-8_10_1)
-else()
-    message(STATUS "Using local libcurl installation.")
-endif()
-
 # Source and include directories - Put all .cpp files in a variable called PROJECT_SOURCES
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -65,7 +56,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${PROJECT_SOURCE_DIR}/include
     ${SDL3_INCLUDE_DIRS}
     ${SDL3_image_INCLUDE_DIRS}
-    ${CURL_INCLUDE_DIRS}
 )
 
 # Define the macro SDL_MAIN_USE_CALLBACKS
@@ -75,7 +65,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE SDL_MAIN_USE_CALLBACKS)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL3::SDL3
     SDL3_image::SDL3_image
-    CURL::libcurl
 )
 
 # Windows: copy DLLs after build
