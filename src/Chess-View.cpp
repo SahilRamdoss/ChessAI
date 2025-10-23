@@ -12,7 +12,7 @@
  * @param app_object is the chess app
  * @param game_object is the game object
  */
-void draw_board(const SDLStructures &app_object, const game game_object)
+void draw_board(const SDLStructures &app_object, const game &game_object)
 {
     board board_object = game_object.game_board;
 
@@ -129,6 +129,11 @@ int main(int argc, char *argv[])
 {
     SDLStructures app_structure;              // The SDL APP
     game current_game;                        // The chess game
+
+    // Initialising the fields of the game struct
+    current_game.active_player = WHITE;
+    current_game.outcome = UNDETERMINED;
+    
     move current_move = {{-1, -1}, {-1, -1}}; // Move made by the current player on the board
     bool piece_selected = false;              // Flag used to keep track if it is the first click on the board or the second click
     chess_piece piece;
@@ -208,7 +213,8 @@ int main(int argc, char *argv[])
                         // Tries moving the piece to the new position
                         current_game.game_board.move_piece(current_move);
 
-                        // Checks is a pawn must be promoted
+                        // Checks if a pawn must be promoted.
+                        // To be seperated into the model later!!!!!!!
                         if (piece.type == PAWN)
                         {
                             if ((piece.color == WHITE && current_move.to.rank == 0) || (piece.color == BLACK && current_move.to.rank == BOARD_SIZE - 1))
@@ -216,22 +222,26 @@ int main(int argc, char *argv[])
                                 // Create block for user to choose piece and allow him to choose the piece
                                 promoted_type = select_promotion_piece(app_structure, current_game, piece.color);
                                 // Replacing the pawn by the promoted piece
-                                current_game.game_board.set_piece_at(current_move.to.rank, current_move.to.file, {promoted_type, piece.color});
+                                current_game.game_board.set_piece_at(current_move.to, {promoted_type, piece.color});
                             }
                         }
                         // Switch to the other player's turn.
                         current_game.active_player = (current_game.active_player == WHITE) ? BLACK : WHITE;
 
-                        // Checking if we have reached checkmate
-                        if (current_game.checkmate(WHITE))
+                        // Checking if we have reached checkmate or stalemate
+                        if (current_game.game_board.checkmate_or_stalemate(WHITE, false))
                         {
                             game_ended = true;
                             current_game.outcome = BLACK_WIN;
                         }
-                        else if (current_game.checkmate(BLACK))
+                        else if (current_game.game_board.checkmate_or_stalemate(BLACK, false))
                         {
                             game_ended = true;
-                            current_game.outcome == WHITE_WIN;
+                            current_game.outcome = WHITE_WIN;
+                        }else if (current_game.game_board.checkmate_or_stalemate(WHITE, true) || current_game.game_board.checkmate_or_stalemate(WHITE, true))
+                        {
+                            game_ended = true;
+                            current_game.outcome = DRAW;
                         }
                     }
 
@@ -239,6 +249,12 @@ int main(int argc, char *argv[])
                     piece_selected = false;
                     current_move = {{-1, -1}, {-1, -1}};
                 }
+            }
+
+            // Ending the game
+            if (game_ended)
+            {
+                running = false;
             }
         }
 

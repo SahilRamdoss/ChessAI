@@ -22,3 +22,5 @@ Run the following commands to build and start **ChessAI**:
 cmake -B build <br>
 cmake --build build <br>
 ./build/ChessAI <br>
+
+> 💡 **Tip:** If your build command keeps failing as the CXX compiler identification is unknown, run the build command on MSYS2 instead of any other terminal.

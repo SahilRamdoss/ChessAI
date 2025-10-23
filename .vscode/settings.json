@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "xstring": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "any": "cpp",
+        "filesystem": "cpp",
+        "vector": "cpp",
+        "type_traits": "cpp"
     }
 }
