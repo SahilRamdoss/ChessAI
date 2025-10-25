@@ -18,3 +18,16 @@ using Catch::Approx;
 //....TTTT....EEEEEEEEEEE.ESSSSSSSSS.....TTTT.....
 //....TTTT....EEEEEEEEEEE..SSSSSSSS......TTTT.....
 //................................................
+
+TEST_CASE("Unmove a piece - Unmoving a pawn movement")
+{
+    board the_board;
+
+    move current_move = {{1,4}, {3,4}};
+
+    the_board.move_piece(current_move);
+
+    board new_board = the_board.unmove_piece();
+
+    REQUIRE(the_board == new_board);
+}

@@ -22,6 +22,12 @@ const int PROMOTION_BLOCK_WIDTH_TILE = 4;             // The width of the promot
 const int PAWN_DEFENDER_SCORE = 20;                   // Score of a pawn defender in king_safety_evaluation
 const int DOUBLE_PAWN_PENALTY = 15;                   // Penalty for each double pawn in pawn structure evaluation
 const int ISOLATED_PAWN_PENALTY = 25;                 // Penalty for each isolated pawn in pawn structure evaluation
+const int TYPE_OF_PIECE_COUNT = 6;                    // Number of different types of pieces on Chess board
+const int PIECE_VALUE[TYPE_OF_PIECE_COUNT] = {100,320,330,500,900,20000}; // Piece values for PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+const int PIECE_PHASE_WEIGHT[TYPE_OF_PIECE_COUNT] = {0,1,1,2,4,0};        // How much each piece contributes to the game phase
+const int OPENING_PIECES_COUNT[TYPE_OF_PIECE_COUNT] = {16,4,4,4,2,2};      // Number of each piece type at the start of the game
+const int PIECE_MOBILITY_VALUE[TYPE_OF_PIECE_COUNT] = {0,4,3,2,1,0};      // Mobility values of each piece type
+const int CENTER_CONTROL_BONUS[TYPE_OF_PIECE_COUNT] = {10,20,20,5,30,0};  // Center control bonus score for each piece type
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,10 +245,10 @@ const int king_piece_table_endgame[8][8] = {
 enum heuristic_weights_percentage
 {
     MATERIAL_EVALUATION_WEIGHT_PERCENTAGE = 100,
-    POSITIONAL_EVALUATION_WEIGHT_PERCENTAGE = 40,
-    MOBILITY_EVALUATION_WEIGHT_PERCENTAGE = 20,
-    KING_SAFETY_EVALUATION_WEIGHT_PERCENTAGE = 50,
-    PAWN_STRUCTURE_EVALUATION_WEIGHT_PERCENTAGE = 30,
+    POSITIONAL_EVALUATION_WEIGHT_PERCENTAGE = 20,
+    MOBILITY_EVALUATION_WEIGHT_PERCENTAGE = 5,
+    KING_SAFETY_EVALUATION_WEIGHT_PERCENTAGE = 20,
+    PAWN_STRUCTURE_EVALUATION_WEIGHT_PERCENTAGE = 15,
     CENTER_CONTROL_EVALUATION_WEIGHT_PERCENTAGE = 10
 };
 
@@ -264,58 +270,6 @@ enum game_phase_ratio
 {
     OPENING_PHASE_RATIO = 55,
     MIDDLE_GAME_PHASE_RATIO = 25
-};
-
-/**
- * @brief enums represents the number of each piece at the 
- * start of the game
- */
-enum opening_piece_count
-{
-    OPENING_QUEEN_COUNT = 2,
-    OPENING_ROOK_COUNT = 4,
-    OPENING_KNIGHT_COUNT = 4,
-    OPENING_BISHOP_COUNT = 4
-};
-
-/**
- * @brief enum used to state how much each piece contributes to the game phase
- */
-enum piece_phase_weight
-{
-    KING_PHASE_WEIGHT = 0,
-    PAWN_PHASE_WEIGHT = 0,
-    KNIGHT_PHASE_WEIGHT = 1,
-    BISHOP_PHASE_WEIGHT = 1,
-    ROOK_PHASE_WEIGHT = 2,
-    QUEEN_PHASE_WEIGHT = 4,
-};
-
-/**
- * @brief enum used to store the mobility value allocated to
- * each piece
- */
-enum piece_mobility_value
-{
-    KNIGHT_MOBILITY_VALUE = 4,
-    BISHOP_MOBILITY_VALUE = 3,
-    ROOK_MOBILITY_VALUE = 2,
-    QUEEN_MOBILITY_VALUE = 1,
-    KING_MOBILITY_VALUE = 0
-};
-
-/**
- * @brief enum used to store the bonus allocated to
- * each piece for controlling the center
- */
-enum piece_center_control_bonus
-{
-    PAWN_CENTER_CONTROL_BONUS = 10,
-    KNIGHT_CENTER_CONTROL_BONUS = 20,
-    BISHOP_CENTER_CONTROL_BONUS = 20,
-    ROOK_CENTER_CONTROL_BONUS = 5,
-    QUEEN_CENTER_CONTROL_BONUS = 30,
-    KING_CENTER_CONTROL_BONUS = 0
 };
 
 /**
@@ -406,6 +360,7 @@ struct move_history_data
 {
     chess_piece piece_captured;    // The piece captured
     move move_made;                // The move_made
+    chess_piece moved_piece;       // The piece moved
 
     bool king_side_castle;         // If a castle was made, was it king side castle
     bool queen_side_castle;        // If a castle was made, was it queen side castle
@@ -546,7 +501,7 @@ public:
      *
      * @return true if there is a checkmate and false otherwise
      */
-    bool checkmate_or_stalemate(piece_color king_color, bool check_stalemate) const;
+    bool checkmate_or_stalemate(piece_color king_color, bool check_stalemate);
 
     // Setters and getters for each of the boolean attributes of the class used to keep track of castling rights. 
     // For the setters, the parameter truth is simply a boolean value used to set the corresponding attribute of the class
@@ -584,6 +539,7 @@ struct game
     board game_board;          // Used to store the state of the board
     piece_color active_player; // Used to store the colour of the current player
     game_outcome outcome;      // Used to store who won the game.
+    int number_of_moves_played; // The number of moves played since the start of the game
 };
 
 // Used to group all the SDL objects used and the actions performed on them
@@ -768,7 +724,7 @@ int evaluate_board(board &the_board, const int &depth);
  * 
  * @return a vector containing all those possible destination squares
  */
-vector<square> possible_king_or_rook_moves(const square &start_square, const int max_displacement);
+vector<square> possible_rook_moves(const square &start_square, const int max_displacement);
 
 /**
  * @brief The function returns a vector containing all the possible squares a bishop
@@ -776,10 +732,12 @@ vector<square> possible_king_or_rook_moves(const square &start_square, const int
  * king is in check.
  * 
  * @param start_square is the square on which the bishop to be moved is found
+ * @param max_displacement is the maximum displacement that the piece can have on the board,
+ * in terms of tiles
  * 
  * @return a vector containing all those possible destination squares
  */
-vector<square> possible_bishop_moves(const square &start_square);
+vector<square> possible_bishop_moves(const square &start_square, const int max_displacement);
 
 /**
  * @brief The function generates all the possible destination squares a particular piece on the board can move to
@@ -893,6 +851,6 @@ void unpromote_pawn_from_queen(board &the_board, const move &move_made, const pi
  * 
  * @return the best move that can be played
  */
-move find_best_move(board &the_board, int depth, piece_color player_color);
+// move find_best_move(board &the_board, int depth, piece_color player_color);
 
 #endif
