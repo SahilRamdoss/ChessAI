@@ -172,7 +172,7 @@ void board::move_piece(const move &current_move)
         // If the pawn we have moved, has moved by 2 ranks, it is a potential en passant capture
         if (abs(rank_difference) == 2)
         {
-            int en_passant_rank = (from.rank + to.rank) / 2;                        // Getting the rank of where we would capture it, if it is captured
+            int en_passant_rank = (from.rank + to.rank) / 2;                        // Getting the rank of the en passant target, if it is captured
             this->set_en_passant_target({en_passant_rank, from.file});              // Creating the en passant target
             move_data.en_passant_opportunity = true;                                // Creating en-passant capture opportunity for this move in move history
             move_data.en_passant_opportunity_square = {en_passant_rank, from.file}; // Getting the en passant target for this en passant opportunity
@@ -196,6 +196,7 @@ void board::move_piece(const move &current_move)
             // The data type of index_of_piece_to_remove will be generated dynamically
             auto index_of_piece_to_remove = find(this->white_pieces_remaining.begin(), this->white_pieces_remaining.end(), captured_piece.type);
 
+            // Checking if the piece has been found first
             if (index_of_piece_to_remove != this->white_pieces_remaining.end())
             {
                 this->white_pieces_remaining.erase(index_of_piece_to_remove);
@@ -203,8 +204,10 @@ void board::move_piece(const move &current_move)
         }
         else
         {
+            // The data type of index_of_piece_to_remove will be generated dynamically
             auto index_of_piece_to_remove = find(this->black_pieces_remaining.begin(), this->black_pieces_remaining.end(), captured_piece.type);
 
+            // Checking if the piece has been found first
             if (index_of_piece_to_remove != this->black_pieces_remaining.end())
             {
                 this->black_pieces_remaining.erase(index_of_piece_to_remove);
@@ -385,6 +388,7 @@ void board::unmove_piece()
         }
     }
 
+    // Basically, the first move made in the game cannot have a non-empty move history
     if (!moves_history_empty)
     {
         if (previous_previous_move_data.en_passant_opportunity)
@@ -458,6 +462,7 @@ bool board::king_in_check(piece_color king_color) const
         return false;
     }
 
+    // Getting the color of this king's opponent
     if (king_color == WHITE)
     {
         opponent_color = BLACK;
@@ -544,12 +549,10 @@ bool board::checkmate_or_stalemate(piece_color king_color, bool check_stalemate)
         return false;
     }
 
-    // Loop through every tile on the board and whenever a piece is encountered,
-    // check if it can move to any other tile. If there is at none which can, this
-    // signifies either checkmate or stalemate, depending on which we are looking for
-
+    // Get all legal moves that can be played by the player for whom we are checking for checkmate/stalemate
     vector<move> legal_moves = generate_legal_moves(*this, king_color);
 
+    // If a legal move can be played, the position cannot be a checkmate/stalemate
     if (legal_moves.size() != 0)
     {
         return false;
@@ -830,11 +833,6 @@ bool is_legal_move(const board &the_board, const move &current_move, bool consid
                     {
                         break;
                     }
-                    // if (the_board.get_piece_at(from_rank, 5).type != NONE || the_board.get_piece_at(from_rank, 6).type != NONE)
-                    // {
-                    //     legal_move_played = false;
-                    //     break;
-                    // }
                 }
                 else
                 {
@@ -852,11 +850,6 @@ bool is_legal_move(const board &the_board, const move &current_move, bool consid
                     {
                         break;
                     }
-                    // if (the_board.get_piece_at(from_rank, 1).type != NONE || the_board.get_piece_at(from_rank, 2).type != NONE || the_board.get_piece_at(from_rank, 3).type != NONE)
-                    // {
-                    //     legal_move_played = false;
-                    //     break;
-                    // }
                 }
 
                 // Preventing castling if there is any attack on the king if it castles
@@ -896,12 +889,14 @@ bool is_legal_move(const board &the_board, const move &current_move, bool consid
         break;
     }
 
+    // If consider attacks only is true, this means that is_legal_move has been called from valid_move_simulated indirectly
     if (consider_attacks_only)
     {
         return legal_move_played;
     }
     else
     {
+        // Must create a new board object as we cannot pass the board as a const to valid_move_simulated
         board temp_board = the_board;
         return valid_move_simulated(temp_board, current_move, legal_move_played);
     }
@@ -1029,7 +1024,8 @@ game_phase determine_game_phase(const board &the_board)
         opening_phase += OPENING_PIECES_COUNT[piece_type] * PIECE_PHASE_WEIGHT[piece_type];
     }
 
-    // Determining the current game phase weight
+    // Determining the current game phase weight //
+
     for (int index = 0; index < the_board.white_pieces_remaining.size(); index++)
     {
         type_of_piece = the_board.white_pieces_remaining[index];
@@ -1077,6 +1073,7 @@ int positional_evaluation(const board &the_board)
     // Determining in which phase of the game we are.
     game_phase stage_of_game = determine_game_phase(the_board);
 
+    // Getting each piece found on the board and calculating its positional score
     for (int rank = 0; rank < BOARD_SIZE; rank++)
     {
         for (int file = 0; file < BOARD_SIZE; file++)
@@ -1191,11 +1188,8 @@ int mobility_evaluation(board &the_board)
     white_legal_moves = generate_legal_moves(the_board, WHITE);
     black_legal_moves = generate_legal_moves(the_board, BLACK);
 
-    /////////////////////////////////////////////////////////////
-    //           THINK OF USING LAMBDA FUNCTIONS               //
-    /////////////////////////////////////////////////////////////
+    // Calculating the mobility scores //
 
-    // Calculating the mobility scores
     for (int index = 0; index < white_legal_moves.size(); index++)
     {
         current_move = white_legal_moves[index];
@@ -1237,6 +1231,7 @@ int king_safety_evaluation(const board &the_board)
 
     chess_piece piece;
 
+    // Checking for pawns on every square surrounding the king
     for (int step_rank = -1; step_rank <= 1; step_rank++)
     {
         for (int step_file = -1; step_file <= 1; step_file++)
@@ -1253,8 +1248,10 @@ int king_safety_evaluation(const board &the_board)
 
             if (defender_rank_white >= 0 && defender_rank_white < BOARD_SIZE && defender_file_white >= 0 && defender_file_white < BOARD_SIZE)
             {
+                // Getting the piece
                 piece = the_board.get_piece_at(defender_rank_white, defender_file_white);
 
+                // Checking if it is a white pawn defending the white king
                 if (piece.type == PAWN && piece.color == WHITE)
                 {
                     white_defenders_count++;
@@ -1263,8 +1260,10 @@ int king_safety_evaluation(const board &the_board)
 
             if (defender_rank_black >= 0 && defender_rank_black < BOARD_SIZE && defender_file_black >= 0 && defender_file_black < BOARD_SIZE)
             {
+                // Getting the piece
                 piece = the_board.get_piece_at(defender_rank_black, defender_file_black);
 
+                // Checking if it is a black pawn defending the black king
                 if (piece.type == PAWN && piece.color == BLACK)
                 {
                     black_defenders_count++;
@@ -1289,12 +1288,12 @@ int pawn_structure_evaluation(const board &the_board)
     int isolated_white_pawns_count = 0; // Number of isolated white pawns
     int isolated_black_pawns_count = 0; // Number of isolated black pawns
 
-    // Getting the number of white ppawns and black pawns on each file
     for (int file = 0; file < BOARD_SIZE; file++)
     {
         white_pawns = 0;
         black_pawns = 0;
 
+        // Getting the number of white pawns and black pawns on the file
         for (int rank = 0; rank < BOARD_SIZE; rank++)
         {
             piece = the_board.get_piece_at(rank, file);
@@ -1312,7 +1311,7 @@ int pawn_structure_evaluation(const board &the_board)
             }
         }
 
-        // Calculating the penalty for each file and adjusting the evaluation
+        // Calculating the penalty for each file and adjusting the evaluation //
 
         if (white_pawns > 1)
         {
@@ -1384,6 +1383,7 @@ int center_control_evaluation(const board &the_board)
     // ranks and files, this formula will work
     int middle_square = BOARD_SIZE / 2;
 
+    // Checking for pieces placed on the central squares
     for (int rank = middle_square - 1; rank <= middle_square; rank++)
     {
         for (int file = middle_square - 1; file <= middle_square; file++)
@@ -1432,6 +1432,8 @@ int evaluate_board(board &the_board, const int &depth)
     int pawn_structure_score = 0;
     int center_control_score = 0;
 
+    // Uncomment any of the other heuristic functions that you may want to use //
+
     material_score = material_evaluation(the_board);
     positional_score = positional_evaluation(the_board);
     // mobility_score = mobility_evaluation(the_board);
@@ -1439,7 +1441,7 @@ int evaluate_board(board &the_board, const int &depth)
     // pawn_structure_score = pawn_structure_evaluation(the_board);
     // center_control_score = center_control_evaluation(the_board);
 
-    // We will implement dynamic weights depending on the game phase :)))
+    // We may implement dynamic weights depending on the game phase as a later iteration :)))
     double final_heuristic_value = ((int)MATERIAL_EVALUATION_WEIGHT_PERCENTAGE / 100.0) * material_score +
                                    ((int)POSITIONAL_EVALUATION_WEIGHT_PERCENTAGE / 100.0) * positional_score +
                                    ((int)MOBILITY_EVALUATION_WEIGHT_PERCENTAGE / 100.0) * mobility_score +
@@ -1457,20 +1459,26 @@ vector<square> possible_bishop_moves(const square &start_square, const int max_d
     int bishop_destination_file = -1;
     square bishop_destination_square;
 
+    // Modelling the expanding cross behaviour of the possible squares a
+    // bishop can move to, to generate all possible destination squares,
+    // irrespective of obstructions
     for (int step = 1; step <= max_displacement; step++)
     {
         for (int step_rank = -step; step_rank <= step; step_rank += 2 * (abs(step)))
         {
             bishop_destination_rank = start_square.rank + step_rank;
 
+            // Making sure we do not leave the board
             if (bishop_destination_rank < 0 || bishop_destination_rank >= BOARD_SIZE)
             {
                 continue;
             }
+
             for (int step_file = -step; step_file <= step; step_file += 2 * (abs(step)))
             {
                 bishop_destination_file = start_square.file + step_file;
 
+                // Making sure we do not leave the board
                 if (bishop_destination_file < 0 || bishop_destination_file >= BOARD_SIZE)
                 {
                     continue;
@@ -1492,12 +1500,16 @@ vector<square> possible_rook_moves(const square &start_square, const int max_dis
     int rook_destination_file = -1;
     square rook_destination_square;
 
+    // Generating all possible destination squares a rook can move to.
+    // Based on the mathematical modelling of incrementing the rank/file displacement
+    // from initial position
     for (int step = -max_displacement; step <= max_displacement; step++)
     {
         rook_destination_rank = start_square.rank + step;
         rook_destination_file = start_square.file;
         rook_destination_square = {rook_destination_rank, rook_destination_file};
 
+        // Making sure the rook does not leave the board
         if ((rook_destination_file >= 0 && rook_destination_file < BOARD_SIZE) && (rook_destination_rank >= 0 && rook_destination_rank < BOARD_SIZE))
         {
             rook_possible_destination_squares.push_back(rook_destination_square);
@@ -1507,6 +1519,7 @@ vector<square> possible_rook_moves(const square &start_square, const int max_dis
         rook_destination_file = start_square.file + step;
         rook_destination_square = {rook_destination_rank, rook_destination_file};
 
+        // Making sure the rook does not leave the board
         if ((rook_destination_file >= 0 && rook_destination_file < BOARD_SIZE) && (rook_destination_rank >= 0 && rook_destination_rank < BOARD_SIZE))
         {
             rook_possible_destination_squares.push_back(rook_destination_square);
@@ -1516,11 +1529,24 @@ vector<square> possible_rook_moves(const square &start_square, const int max_dis
     return rook_possible_destination_squares;
 }
 
-vector<square> generate_possible_destination_squares(const square &start_square, const chess_piece &piece)
+vector<square> possible_queen_moves(const square &start_square, const int max_displacement)
 {
     vector<square> possible_destination_squares = {};
     vector<square> rook_possible_destination_squares = {};
     vector<square> bishop_possible_destination_squares = {};
+
+    rook_possible_destination_squares = possible_rook_moves(start_square, max_displacement);
+    possible_destination_squares.insert(possible_destination_squares.end(), rook_possible_destination_squares.begin(), rook_possible_destination_squares.end());
+    bishop_possible_destination_squares = possible_bishop_moves(start_square, max_displacement);
+    possible_destination_squares.insert(possible_destination_squares.end(), bishop_possible_destination_squares.begin(), bishop_possible_destination_squares.end());
+
+    return possible_destination_squares;
+}
+
+vector<square> generate_possible_destination_squares(const square &start_square, const chess_piece &piece)
+{
+    vector<square> possible_destination_squares = {};
+    vector<square> normal_king_possible_destination_square = {};
     int destination_rank = -1;
     int destination_file = -1;
     square destination_square = {destination_rank, destination_file};
@@ -1552,6 +1578,7 @@ vector<square> generate_possible_destination_squares(const square &start_square,
                 continue;
             }
 
+            // Checking if it was a two rank pawn push or not
             if (abs(step_rank) == 2)
             {
                 destination_file = start_square.file;
@@ -1585,6 +1612,7 @@ vector<square> generate_possible_destination_squares(const square &start_square,
 
             destination_rank = start_square.rank + step_rank;
 
+            // Making sure the Knight does not leave the board
             if (destination_rank < 0 || destination_rank >= BOARD_SIZE)
             {
                 continue;
@@ -1592,10 +1620,12 @@ vector<square> generate_possible_destination_squares(const square &start_square,
 
             for (int step_file = -2; step_file <= 2; step_file++)
             {
+                // Checking if displacement obeys the knight's behaviour
                 if ((abs(step_rank) == 1 && abs(step_file) == 2) || (abs(step_rank) == 2 && abs(step_file) == 1))
                 {
                     destination_file = start_square.file + step_file;
 
+                    // Making sure the knight does not leave the board
                     if (destination_file < 0 || destination_file >= BOARD_SIZE)
                     {
                         continue;
@@ -1608,18 +1638,13 @@ vector<square> generate_possible_destination_squares(const square &start_square,
         }
         break;
     case BISHOP:
-        bishop_possible_destination_squares = possible_bishop_moves(start_square, BOARD_SIZE);
-        possible_destination_squares.insert(possible_destination_squares.end(), bishop_possible_destination_squares.begin(), bishop_possible_destination_squares.end());
+        possible_destination_squares = possible_bishop_moves(start_square, BOARD_SIZE - 1);
         break;
     case ROOK:
-        rook_possible_destination_squares = possible_rook_moves(start_square, BOARD_SIZE - 1);
-        possible_destination_squares.insert(possible_destination_squares.end(), rook_possible_destination_squares.begin(), rook_possible_destination_squares.end());
+        possible_destination_squares = possible_rook_moves(start_square, BOARD_SIZE - 1);
         break;
     case QUEEN:
-        rook_possible_destination_squares = possible_rook_moves(start_square, BOARD_SIZE - 1);
-        possible_destination_squares.insert(possible_destination_squares.end(), rook_possible_destination_squares.begin(), rook_possible_destination_squares.end());
-        bishop_possible_destination_squares = possible_bishop_moves(start_square, BOARD_SIZE);
-        possible_destination_squares.insert(possible_destination_squares.end(), bishop_possible_destination_squares.begin(), bishop_possible_destination_squares.end());
+        possible_destination_squares = possible_queen_moves(start_square, BOARD_SIZE - 1);
         break;
     case KING:
         // Castling
@@ -1639,10 +1664,8 @@ vector<square> generate_possible_destination_squares(const square &start_square,
         }
 
         // Normal king moves
-        rook_possible_destination_squares = possible_rook_moves(start_square, 1);
-        possible_destination_squares.insert(possible_destination_squares.end(), rook_possible_destination_squares.begin(), rook_possible_destination_squares.end());
-        bishop_possible_destination_squares = possible_bishop_moves(start_square, 1);
-        possible_destination_squares.insert(possible_destination_squares.end(), bishop_possible_destination_squares.begin(), bishop_possible_destination_squares.end());
+        normal_king_possible_destination_square = possible_queen_moves(start_square, 1);
+        possible_destination_squares.insert(possible_destination_squares.end(), normal_king_possible_destination_square.begin(), normal_king_possible_destination_square.end());
         break;
     default:
         break;
@@ -1668,8 +1691,10 @@ vector<move> generate_legal_moves(board &the_board, piece_color player_color)
     {
         for (int start_file = 0; start_file < BOARD_SIZE; start_file++)
         {
+            // Getting the piece at the current tile
             piece = the_board.get_piece_at(start_rank, start_file);
 
+            // If the tile has no piece or the piece does not belong to the player, skip the iteration
             if (piece.type == NONE || piece.color != player_color)
             {
                 continue;
@@ -1678,6 +1703,7 @@ vector<move> generate_legal_moves(board &the_board, piece_color player_color)
             start_square.rank = start_rank;
             start_square.file = start_file;
 
+            // Get possible destination squares of the piece, ignoring obstructions
             possible_piece_destinations = generate_possible_destination_squares(start_square, piece);
 
             for (int index = 0; index < possible_piece_destinations.size(); index++)
@@ -1685,6 +1711,7 @@ vector<move> generate_legal_moves(board &the_board, piece_color player_color)
                 end_square = possible_piece_destinations[index];
                 try_move = {start_square, end_square};
 
+                // Check if the move is legal
                 if (is_legal_move(the_board, try_move, false))
                 {
                     chess_piece target_piece = the_board.get_piece_at(end_square.rank, end_square.file);
@@ -1713,6 +1740,8 @@ vector<move> generate_legal_moves(board &the_board, piece_color player_color)
             }
         }
     }
+
+    // Ordering legal moves in the order : capture -> check -> quiet
 
     // Adding the capture moves to legal moves
     legal_moves.insert(legal_moves.end(), capture_moves.begin(), capture_moves.end());
@@ -1822,4 +1851,174 @@ void unpromote_pawn_from_queen(board &the_board, const move &move_made, const pi
     {
         undo_black_pawn_promotion(the_board, move_made);
     }
+}
+
+int minimax(board &the_board, int depth, int alpha, int beta, bool maximizing_player)
+{
+    if (depth == 0 || the_board.checkmate_or_stalemate(maximizing_player ? WHITE : BLACK, false) || the_board.checkmate_or_stalemate(maximizing_player ? WHITE : BLACK, true))
+    {
+        int eval = evaluate_board(the_board, depth);
+        SDL_Log("Eval at depth %d is %d", depth, eval);
+        return eval;
+    }
+
+    // Get all possible legal moves for the player
+    vector<move> legal_moves = generate_legal_moves(the_board, (maximizing_player ? WHITE : BLACK));
+
+    // If no legal moves can be played, stop searching the tree and return the evaluation
+    if (legal_moves.size() == 0)
+    {
+        return evaluate_board(the_board, depth);
+    }
+
+    // Flags used to keep track of whether a white pawn was promoted or a black pawn was promoted
+    bool white_pawn_promoted = false;
+    bool black_pawn_promoted = false;
+
+    if (maximizing_player)
+    {
+        // Assigned very low value so that easily replaced
+        int max_evaluation = -1000000;
+
+        for (int index = 0; index < legal_moves.size(); index++)
+        {
+            move move_made = legal_moves[index];
+            chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
+            the_board.move_piece(move_made);
+
+            // Checking if there should be a pawn promotion and doing it if yes
+            white_pawn_promoted = automatic_white_pawn_promotion(the_board, moved_piece, move_made);
+
+            // Evaluating the board state
+            int evaluation = minimax(the_board, depth - 1, alpha, beta, false);
+
+            // Undoing the pawn promotion
+            if (white_pawn_promoted)
+            {
+                undo_white_pawn_promotion(the_board, move_made);
+                white_pawn_promoted = false;
+            }
+
+            // Undoing the move
+            the_board.unmove_piece();
+
+            max_evaluation = max(max_evaluation, evaluation);
+            alpha = max(alpha, evaluation);
+
+            // Pruning
+            if (beta <= alpha)
+            {
+                break;
+            }
+        }
+
+        return max_evaluation;
+    }
+    else
+    {
+        // Assigned very high value so that easily replaced
+        int min_evaluation = 1000000;
+        for (int index = 0; index < legal_moves.size(); index++)
+        {
+            move move_made = legal_moves[index];
+            chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
+
+            // Moving the chess piece
+            the_board.move_piece(move_made);
+
+            // Checking if there should be a pawn promotion and doing it if yes
+            black_pawn_promoted = automatic_black_pawn_promotion(the_board, moved_piece, move_made);
+
+            // Evaluating the board state
+            int evaluation = minimax(the_board, depth - 1, alpha, beta, true);
+
+            // Undoing the pawn promotion
+            if (black_pawn_promoted)
+            {
+                undo_black_pawn_promotion(the_board, move_made);
+                black_pawn_promoted = false;
+            }
+
+            // Undoing the move
+            the_board.unmove_piece();
+
+            min_evaluation = min(min_evaluation, evaluation);
+            beta = min(beta, evaluation);
+
+            // Pruning
+            if (beta <= alpha)
+            {
+                break;
+            }
+        }
+
+        return min_evaluation;
+    }
+}
+
+move find_best_move(board &the_board, int depth, piece_color player_color)
+{
+    vector<move> possible_legal_moves = generate_legal_moves(the_board, player_color);
+    move best_move = {{-1, -1}, {-1, -1}};
+    int evaluation;
+    int alpha = -1000000;
+    int beta = 1000000;
+
+    // If there are no legal moves to play, just return best_move to signify either
+    // checkmate or stalemate
+    if (possible_legal_moves.size() == 0)
+    {
+        return best_move;
+    }
+
+    // Initialize best_value to a very high integer for white
+    // and a very low integer for black
+    int best_value = (player_color == WHITE ? -1000000 : 1000000);
+
+    for (int index = 0; index < possible_legal_moves.size(); index++)
+    {
+        move move_made = possible_legal_moves[index];
+        chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
+        bool pawn_promoted = false;
+
+        // Making the move on the board
+        the_board.move_piece(move_made);
+
+        // Check if the moved piece is a pawn and if it lands on a promotion square. If yes,
+        // promote it to a queen
+        pawn_promoted = promote_pawn_to_queen(the_board, moved_piece, move_made, player_color);
+
+        // Evaluating the board state
+        evaluation = minimax(the_board, depth - 1, alpha, beta, (player_color == WHITE ? false : true));
+
+        // Adjusting alpha and/or at top level
+        if (player_color == WHITE)
+        {
+            alpha = max(alpha, evaluation);
+        }
+        else
+        {
+            beta = min(beta, evaluation);
+        }
+
+        // Undoing the pawn promotion if it was promoted
+        if (pawn_promoted)
+        {
+            unpromote_pawn_from_queen(the_board, move_made, player_color);
+        }
+
+        // Undoing the move
+        the_board.unmove_piece();
+
+        // Adjusting the best_value and best move that can be made
+        if ((player_color == WHITE && evaluation > best_value) || (player_color == BLACK && evaluation < best_value))
+        {
+            best_value = evaluation;
+            best_move = move_made;
+        }
+    }
+
+    SDL_Log("Best evaluation is : %d", best_value);
+
+    return best_move;
 }

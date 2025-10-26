@@ -17,8 +17,7 @@ Make sure SDL3 is properly installed and linked before building. We also make us
 
 Run the following commands to build and start **ChessAI**:
 
-> 💡 **Tip:** Make sure you have CMake version 3.30 or higher installed before running these commands.
-> 💡 **Tip:** If your build command keeps failing, run the build command on MSYS2 terminal instead of any other terminal.
+> 💡 **Tip:** Make sure you have CMake version 3.30 or higher installed before running these commands. If your build command keeps failing, run the build command on MSYS2 terminal instead of any other terminal.
 
 cmake -B build <br>
 cmake --build build <br>

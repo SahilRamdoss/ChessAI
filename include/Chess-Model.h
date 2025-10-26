@@ -546,9 +546,10 @@ struct game
 class SDLStructures
 {
 public:
-    SDL_Window *window = nullptr;
-    SDL_Renderer *renderer = nullptr;
-    SDL_Texture *piece_textures[2][6];
+    SDL_Window *window = nullptr; // The window
+    SDL_Renderer *renderer = nullptr; // The renderer
+    SDL_Texture *piece_textures[2][6]; // The textures for the chess pieces
+    SDL_Texture *banner_texture; // The texture for the end of game banner
 
 public:
     /**
@@ -714,7 +715,7 @@ int center_control_evaluation(const board &the_board);
 int evaluate_board(board &the_board, const int &depth);
 
 /**
- * @brief The function returns a vector containing all the possible squares a king or 
+ * @brief The function returns a vector containing all the possible squares 
  * a rook found on the start_square can move to, ignoring any obstructions and whether the
  * king is in check.
  * 
@@ -738,6 +739,19 @@ vector<square> possible_rook_moves(const square &start_square, const int max_dis
  * @return a vector containing all those possible destination squares
  */
 vector<square> possible_bishop_moves(const square &start_square, const int max_displacement);
+
+/**
+ * @brief The function returns a vector containing all the possible squares a queen
+ * found on the start_square can move to, ignoring any obstructions and whether the
+ * king is in check.
+ * 
+ * @param start_square is the square on which the piece to be moved is found
+ * @param max_displacement is the maximum displacement that the piece can have on the board,
+ * in terms of tiles
+ * 
+ * @return a vector containing all those possible destination squares
+ */
+vector<square> possible_queen_moves(const square &start_square, const int max_displacement);
 
 /**
  * @brief The function generates all the possible destination squares a particular piece on the board can move to
@@ -851,6 +865,6 @@ void unpromote_pawn_from_queen(board &the_board, const move &move_made, const pi
  * 
  * @return the best move that can be played
  */
-// move find_best_move(board &the_board, int depth, piece_color player_color);
+move find_best_move(board &the_board, int depth, piece_color player_color);
 
 #endif

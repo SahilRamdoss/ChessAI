@@ -8,7 +8,7 @@
 #include <chrono>
 #include <thread>
 
-using std::max, std::min;
+using std::max, std::min, std::this_thread::sleep_for, std::chrono::seconds;
 
 /**
  * @brief draws the board and adds the pieces
@@ -18,6 +18,7 @@ using std::max, std::min;
  */
 void draw_board(const SDLStructures &app_object, const game &game_object)
 {
+    // Getting the chess board
     board board_object = game_object.game_board;
 
     for (int rank = 0; rank < BOARD_SIZE; rank++)
@@ -27,9 +28,13 @@ void draw_board(const SDLStructures &app_object, const game &game_object)
             // Checking if we should draw a light or dark square on the bord
             bool dark = (rank + file) % 2;
             if (dark)
+            {
                 SDL_SetRenderDrawColor(app_object.renderer, 196, 135, 135, 255); // dark square
+            }
             else
+            {
                 SDL_SetRenderDrawColor(app_object.renderer, 235, 215, 215, 255); // light square
+            }
 
             // Creating a tile for the chesss board
             SDL_FRect tile = {float(file * TILE_SIZE), float(rank * TILE_SIZE), float(TILE_SIZE), float(TILE_SIZE)};
@@ -48,6 +53,16 @@ void draw_board(const SDLStructures &app_object, const game &game_object)
     }
 }
 
+/**
+ * @brief This function displays the promotion block and allows the user to select
+ * the piece to promote a pawn to
+ * 
+ * @param app_object is the chess app object
+ * @param game_object is the game_object
+ * @param color is the color of the pawn being promoted
+ * 
+ * @return the type of the chess piece the pawn must be promoted to
+ */
 piece_type select_promotion_piece(const SDLStructures &app_object, const game &game_object, piece_color color)
 {
     bool piece_selected = false; // Used to keep track whether a piece has been selected or not
@@ -65,17 +80,20 @@ piece_type select_promotion_piece(const SDLStructures &app_object, const game &g
      *
      * Use of lambda function to create this sub-code which is needed inside the select_promotion_piece procedure.
      * This lambda function heavily depends on many of the parameters and variables used in the select_promotion_piece.
-     * Hence to simplify the code, we make use of the lambda function
+     * Hence to simplify the code, we make use of the lambda function instead of a helper function
      * We capture all outside variables as reference
      */
     auto display_promotion_block = [&]()
     {
         int colorId = color;
         int typeId = KNIGHT;
+
+        // Drawing the promotion block
         SDL_FRect block = {x_top_left_corner, y_top_left_corner, block_width, block_height};
         SDL_SetRenderDrawColor(app_object.renderer, 209, 202, 202, 255);
         SDL_RenderFillRect(app_object.renderer, &block);
 
+        // Drawing the sub-block for each piece that can be selected
         for (int x_coor = PROMOTION_BLOCK_X_TOP_LEFT; x_coor < PROMOTION_BLOCK_X_TOP_LEFT + PROMOTION_BLOCK_WIDTH_TILE; x_coor++)
         {
             SDL_FRect dst = {float(x_coor * TILE_SIZE), y_top_left_corner, float(TILE_SIZE), float(TILE_SIZE)};
@@ -84,6 +102,7 @@ piece_type select_promotion_piece(const SDLStructures &app_object, const game &g
         }
     };
 
+    // Prevent any chess moves until a piece has been selected for promotion
     while (!piece_selected)
     {
         while (SDL_PollEvent(&event))
@@ -126,9 +145,22 @@ piece_type select_promotion_piece(const SDLStructures &app_object, const game &g
         SDL_RenderPresent(app_object.renderer);
     }
 
+    // In case of an unexpected error, we just return NONE
     return NONE;
 }
 
+
+/**
+ * @brief This procedure checks if a pawn has reached a promotion square and if yes, it allows the user to select the piece to
+ * promotoe the pawn to and does the promotion. If it is the AI playing, the pawn will automatically be promoted to a Queen.
+ * 
+ * @param app_structure is the chess app
+ * @param current_game is the game object
+ * @param piece is the piece just moved in the current move
+ * @param current_move is the move just played on the board
+ * @param AI is a flag used to know whether it is a human player or the AI trying to promote a piece
+ * 
+ */
 void check_for_promotion(const SDLStructures &app_structure, game &current_game, const chess_piece &piece, const move &current_move, bool AI)
 {
     piece_type promoted_type = NONE;
@@ -152,217 +184,31 @@ void check_for_promotion(const SDLStructures &app_structure, game &current_game,
     }
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int minimax(const SDLStructures &app_structure, const game &current_game, board &the_board, int depth, int alpha, int beta, bool maximizing_player)
-{
-    if (depth == 0 || the_board.checkmate_or_stalemate(maximizing_player? WHITE : BLACK, false) || the_board.checkmate_or_stalemate(maximizing_player? WHITE : BLACK, true))
-    {
-        int eval = evaluate_board(the_board, depth);
-        SDL_Log("Eval at depth %d is %d", depth, eval);
-        return eval;
-    }
-
-    vector<move> legal_moves = generate_legal_moves(the_board, (maximizing_player ? WHITE : BLACK));
-
-    if (legal_moves.size() == 0)
-    {
-        return evaluate_board(the_board, depth);
-    }
-    bool white_pawn_promoted = false;
-    bool black_pawn_promoted = false;
-
-    if (maximizing_player)
-    {
-        int max_evaluation = -1000000;
-
-        for (int index = 0; index < legal_moves.size(); index++)
-        {
-            move move_made = legal_moves[index];
-            chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
-            the_board.move_piece(move_made);
-
-            // Checking if there should be a pawn promotion and doing it if yes
-            white_pawn_promoted = automatic_white_pawn_promotion(the_board, moved_piece, move_made);
-
-            // SDL_SetRenderDrawColor(app_structure.renderer, 0, 0, 0, 255);
-            // SDL_RenderClear(app_structure.renderer);
-
-            // // Drawing the chess board
-            // draw_board(app_structure, current_game);
-
-            // SDL_RenderPresent(app_structure.renderer);
-            // std::this_thread::sleep_for(std::chrono::seconds(2));
-
-            // Evaluating the board state
-            int evaluation = minimax(app_structure, current_game, the_board, depth - 1, alpha, beta, false);
-
-            // Undoing the pawn promotion
-            if (white_pawn_promoted)
-            {
-                undo_white_pawn_promotion(the_board, move_made);
-                white_pawn_promoted = false;
-            }
-
-            // Undoing the move
-            the_board.unmove_piece();
-
-            max_evaluation = max(max_evaluation, evaluation);
-            alpha = max(alpha, evaluation);
-
-            if (beta <= alpha)
-            {
-                break;
-            }
-        }
-
-        return max_evaluation;
-    }
-    else
-    {
-        int min_evaluation = 1000000;
-        for (int index = 0; index < legal_moves.size(); index++)
-        {
-            move move_made = legal_moves[index];
-            chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
-
-            // Moving the chess piece
-            the_board.move_piece(move_made);
-
-            // Checking if there should be a pawn promotion and doing it if yes
-            black_pawn_promoted = automatic_black_pawn_promotion(the_board, moved_piece, move_made);
-
-            // SDL_SetRenderDrawColor(app_structure.renderer, 0, 0, 0, 255);
-            // SDL_RenderClear(app_structure.renderer);
-
-            // // Drawing the chess board
-            // draw_board(app_structure, current_game);
-
-            // SDL_RenderPresent(app_structure.renderer);
-            // std::this_thread::sleep_for(std::chrono::seconds(2));
-
-            // Evaluating the board state
-            int evaluation = minimax(app_structure, current_game, the_board, depth - 1, alpha, beta, true);
-
-            // Undoing the pawn promotion
-            if (black_pawn_promoted)
-            {
-                undo_black_pawn_promotion(the_board, move_made);
-                black_pawn_promoted = false;
-            }
-
-            // Undoing the move
-            the_board.unmove_piece();
-
-            min_evaluation = min(min_evaluation, evaluation);
-            beta = min(beta, evaluation);
-
-            if (beta <= alpha)
-            {
-                break;
-            }
-        }
-
-        return min_evaluation;
-    }
-}
-
-move find_best_move(const SDLStructures &app_structure, game &current_game, board &the_board, int depth, piece_color player_color)
-{
-    vector<move> possible_legal_moves = generate_legal_moves(the_board, player_color);
-    move best_move = {{-1, -1}, {-1, -1}};
-    int evaluation;
-    int alpha = -1000000;
-    int beta = 1000000;
-
-    // If there are no legal moves to play, just return best_move to signify either
-    // checkmate or stalemate
-    if (possible_legal_moves.size() == 0)
-    {
-        return best_move;
-    }
-
-    // Initialize best_value to a very high integer for white
-    // and a very low integer for black
-    int best_value = (player_color == WHITE ? -1000000 : 1000000);
-
-    for (int index = 0; index < possible_legal_moves.size(); index++)
-    {
-        move move_made = possible_legal_moves[index];
-        chess_piece moved_piece = the_board.get_piece_at(move_made.from.rank, move_made.from.file);
-        bool pawn_promoted = false;
-
-        // Making the move on the board
-        the_board.move_piece(move_made);
-
-        // Check if the moved piece is a pawn and if it lands on a promotion square. If yes,
-        // promote it to a queen
-        pawn_promoted = promote_pawn_to_queen(the_board, moved_piece, move_made, player_color);
-
-        // SDL_SetRenderDrawColor(app_structure.renderer, 0, 0, 0, 255);
-        // SDL_RenderClear(app_structure.renderer);
-
-        // // Drawing the chess board
-        // draw_board(app_structure, current_game);
-
-        // SDL_RenderPresent(app_structure.renderer);
-        // std::this_thread::sleep_for(std::chrono::seconds(2));
-
-        // Evaluating the board state
-        evaluation = minimax(app_structure, current_game, the_board, depth - 1, alpha, beta, (player_color == WHITE ? false : true));
-
-        // Adjusting alpha and/or at top level
-        if (player_color == WHITE)
-        {
-            alpha = max(alpha, evaluation);
-        }
-        else
-        {
-            beta = min(beta, evaluation);
-        }
-
-        // Undoing the pawn promotion if it was promoted
-        if (pawn_promoted)
-        {
-            unpromote_pawn_from_queen(the_board, move_made, player_color);
-        }
-
-        // Undoing the move
-        the_board.unmove_piece();
-
-        // Adjusting the best_value and best move that can be made
-        if ((player_color == WHITE && evaluation > best_value) || (player_color == BLACK && evaluation < best_value))
-        {
-            best_value = evaluation;
-            best_move = move_made;
-        }
-    }
-
-    SDL_Log("Best evaluation is : %d", best_value);
-
-    return best_move;
-}
-
+/**
+ * @brief The procedure allows the AI to make a move on the board
+ * 
+ * @param app_structure is the chess app
+ * @param current_game is the current chess game being played
+ */
 void AI_move(const SDLStructures &app_structure, game &current_game)
 {
+    // Getting the color of the pieces moved by the AI
     piece_color AI_color = current_game.active_player;
-    // The value of depth MUST BE EVEN for better performance
-    int depth = 4;
-    move best_move;
-    chess_piece moving_piece;
+
+    int depth = 4; // Depth applied to minimax algorithm. The value of depth MUST BE EVEN for better performance
+    move best_move; // Best move calculated by AI
+    chess_piece moving_piece; // Piece being moved by AI
 
     // Checking if the AI is making the first move in the game
     if (current_game.number_of_moves_played == 0)
     {
         // Generate a random move as it is pointless to call minimax in this case
-        // Or generate an opening?
+        // Or generate an opening? NOT SURE. FURTHER LOGIC TO BE IMPLEMENTED LATER
     }
 
     // Finding the best move the AI can play
-    best_move = find_best_move(app_structure, current_game, current_game.game_board, depth, AI_color);
+    best_move = find_best_move(current_game.game_board, depth, AI_color);
 
     // Get the moving piece
     moving_piece = current_game.game_board.get_piece_at(best_move.from.rank, best_move.from.file);
@@ -380,10 +226,13 @@ void AI_move(const SDLStructures &app_structure, game &current_game)
     current_game.number_of_moves_played++;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * @brief This function is called to check if there is a checkmate or stalemate on the board
+ * 
+ * @param current_game is the current chess game object
+ * 
+ * @return true if there is a checkmate or stalemate. Returns false otherwise.
+ */
 bool end_the_game(game &current_game)
 {
     // Checking if we have reached checkmate or stalemate
@@ -412,6 +261,111 @@ bool end_the_game(game &current_game)
     return false;
 }
 
+/**
+ * @brief This function loads the texture for the banner to be displayed 
+ * upon the end of the game
+ * 
+ * @param app_structure is the chess app object
+ * @param outcome is the game outcome (WHITE WIN, BLACK WIN, DRAW)
+ * 
+ * @return true if texture is loaded correctly and false otherwise.
+ */
+bool load_banner_texture(SDLStructures &app_structure, game_outcome &outcome)
+{
+    string file_path; // File path of where asset needed is located.
+
+    switch (outcome)
+    {
+    case WHITE_WIN:
+        file_path = "assets/banners/White_Wins.png";
+        break;
+    case BLACK_WIN:
+        file_path = "assets/banners/Black_Wins.png";
+        break;
+    case DRAW:
+        file_path = "assets/banners/Draw.png";
+        break;
+    default:
+        return false;
+        break;
+    }
+
+    // Convert to c string as SDL does not accept string arguments
+    const char *path = file_path.c_str();
+
+    // Creating the image surface
+    SDL_Surface *surf = IMG_Load(path);
+
+    // Checking if surface has been created successfully
+    if (!surf)
+    {
+        SDL_Log("Failed to load %s: %s", path, SDL_GetError());
+        return false;
+    }
+
+    // Creating the banner texture from the surface
+    app_structure.banner_texture = SDL_CreateTextureFromSurface(app_structure.renderer, surf);
+
+    SDL_DestroySurface(surf);
+
+    // Checking if the texture has been created successfully
+    if (!app_structure.banner_texture)
+    {
+        SDL_Log("Failed to create texture for %s: %s", path, SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief This procedure displays a banner showing the game outcome
+ * 
+ * @param app_structure is the chess app object
+ * @param game_object is the chess game object
+ */
+void display_winner(SDLStructures &app_structure, const game &game_object)
+{
+    // Getting the outcome of the chess game
+    game_outcome outcome = game_object.outcome;
+
+    // Clearing the buffer
+    SDL_SetRenderDrawColor(app_structure.renderer, 0, 0, 0, 255);
+    SDL_RenderClear(app_structure.renderer);
+
+    // Initializing position of banner
+    float x_top_left_corner = float(PROMOTION_BLOCK_X_TOP_LEFT * TILE_SIZE);
+    float y_top_left_corner = float(PROMOTION_BLOCK_Y_TOP_LEFT_BLACK * TILE_SIZE);
+    float block_width = float(TILE_SIZE * PROMOTION_BLOCK_WIDTH_TILE);
+    float block_height = float(2 * TILE_SIZE);
+
+    // Creating the banner container
+    SDL_FRect block = {x_top_left_corner, y_top_left_corner, block_width, block_height};
+    SDL_SetRenderDrawColor(app_structure.renderer, 66, 63, 63, 255);
+    SDL_RenderFillRect(app_structure.renderer, &block);
+
+    if (!load_banner_texture(app_structure, outcome))
+    {
+        SDL_Log("Failed to load the banner textures");
+        return;
+    }
+
+    float text_width;
+    float text_height;
+
+    // Get the banner dimensions
+    SDL_GetTextureSize(app_structure.banner_texture, &text_width, &text_height);
+
+    // Centering the banner texture inside the block
+    SDL_FRect dst = {x_top_left_corner + (block_width - text_width) / 2.0f,y_top_left_corner + (block_height - text_height) / 2.0f,text_width,text_height};
+
+    // Draw the banner texture
+    SDL_RenderTexture(app_structure.renderer, app_structure.banner_texture, NULL, &dst);
+
+    // Present the updated frame
+    SDL_RenderPresent(app_structure.renderer);
+}
+
 int main(int argc, char *argv[])
 {
     SDLStructures app_structure; // The SDL APP
@@ -424,12 +378,14 @@ int main(int argc, char *argv[])
     move current_move = {{-1, -1}, {-1, -1}}; // Move made by the current player on the board
     bool piece_selected = false;              // Flag used to keep track if it is the first click on the board or the second click
     chess_piece piece;
-    bool game_ended = false; // Used to know when a checkmate is reached
 
+    bool game_ended = false; // Used to know when a checkmate is reached
     bool running = true; // Flag used to know when user quites the app
     SDL_Event event;     // Used to store an SDL event in the SDL event queue
 
-    bool AI_active = true;        // Flag to know if the AI is playing or not
+    bool AI_active = false;// Flag to know if the AI is playing or not. implemented as a variable here 
+                            // due to possible program extension later
+
     piece_color AI_color = BLACK; // Color of chess pieces played by AI
 
     // Initialising SDL3
@@ -532,6 +488,19 @@ int main(int argc, char *argv[])
             if (game_ended)
             {
                 running = false;
+
+                // Repeated code here to correct a bug concerning displaying the banner
+                SDL_SetRenderDrawColor(app_structure.renderer, 0, 0, 0, 255);
+                SDL_RenderClear(app_structure.renderer);
+
+                draw_board(app_structure, current_game);
+
+                SDL_RenderPresent(app_structure.renderer);
+
+                sleep_for(seconds(1));
+
+                // Display banner of winner
+                display_winner(app_structure, current_game);
             }
         }
 
@@ -542,6 +511,14 @@ int main(int argc, char *argv[])
         draw_board(app_structure, current_game);
 
         SDL_RenderPresent(app_structure.renderer);
+
+        // If the game ended, display the banner
+        if (running == false)
+        {
+            // Display banner of winner
+            display_winner(app_structure, current_game);
+            sleep_for(seconds(2));
+        }
     }
 
     // Clean up textures
@@ -552,7 +529,11 @@ int main(int argc, char *argv[])
             SDL_DestroyTexture(app_structure.piece_textures[color_index][type_index]);
         }
     }
-    // Clean up the renderer and window
+
+    // Destroy the banner texture
+    SDL_DestroyTexture(app_structure.banner_texture);
+
+    // Clean up the renderer and window, then quit SDL3
     SDL_DestroyRenderer(app_structure.renderer);
     SDL_DestroyWindow(app_structure.window);
     SDL_Quit();
