@@ -244,8 +244,8 @@ const int king_piece_table_endgame[8][8] = {
 
 enum heuristic_weights_percentage
 {
-    MATERIAL_EVALUATION_WEIGHT_PERCENTAGE = 100,
-    POSITIONAL_EVALUATION_WEIGHT_PERCENTAGE = 20,
+    MATERIAL_EVALUATION_WEIGHT_PERCENTAGE = 110,
+    POSITIONAL_EVALUATION_WEIGHT_PERCENTAGE = 15,
     MOBILITY_EVALUATION_WEIGHT_PERCENTAGE = 5,
     KING_SAFETY_EVALUATION_WEIGHT_PERCENTAGE = 20,
     PAWN_STRUCTURE_EVALUATION_WEIGHT_PERCENTAGE = 15,
@@ -298,20 +298,6 @@ enum piece_color
     WHITE = FIRST_COLOR,
     BLACK,
     LAST_COLOR
-};
-
-/**
- * @brief enum used to represent the material value of each type of chess piece. The values assigned are the
- * standard values used in chess engines.
- */
-enum piece_value
-{
-    PAWN_VALUE = 100,
-    KNIGHT_VALUE = 320,
-    BISHOP_VALUE = 330,
-    ROOK_VALUE = 500,
-    QUEEN_VALUE = 900,
-    KING_VALUE = 20000,
 };
 
 /**

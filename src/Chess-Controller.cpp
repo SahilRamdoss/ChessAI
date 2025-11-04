@@ -798,6 +798,14 @@ bool is_legal_move(const board &the_board, const move &current_move, bool consid
                     break;
                 }
 
+                chess_piece piece_on_rook_square = the_board.get_piece_at(current_move.to.rank, king_side? (BOARD_SIZE-1):0);
+
+                // Check if the rook is still present on the board
+                if (piece_on_rook_square.type !=ROOK || piece_on_rook_square.color != piece.color){
+                    legal_move_played = false;
+                    break;
+                }
+
                 // Checking if any of the pieces involved in the castle have been moved from the start of the game
                 if (piece.color == WHITE)
                 {

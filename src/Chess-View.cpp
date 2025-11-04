@@ -538,3 +538,4 @@ int main(int argc, char *argv[])
     SDL_DestroyWindow(app_structure.window);
     SDL_Quit();
 }
+
