@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
     bool running = true; // Flag used to know when user quites the app
     SDL_Event event;     // Used to store an SDL event in the SDL event queue
 
-    bool AI_active = false;// Flag to know if the AI is playing or not. implemented as a variable here 
+    bool AI_active = true;// Flag to know if the AI is playing or not. implemented as a variable here 
                             // due to possible program extension later
 
     piece_color AI_color = BLACK; // Color of chess pieces played by AI
