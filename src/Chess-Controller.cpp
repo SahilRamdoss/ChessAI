@@ -8,6 +8,11 @@ using std::abs, std::find, std::vector, std::stack, std::max, std::min;
 
 board::board()
 {
+    // Initialising vectors
+    this->white_pieces_remaining = {};
+    this->black_pieces_remaining = {};
+    this->move_history = {};
+    
     // Creating an empty chess board
     for (int rank = 0; rank < BOARD_SIZE; rank++)
     {
@@ -54,11 +59,6 @@ board::board()
     this->black_pieces_remaining.push_back(QUEEN);
     this->chess_board[0][4] = {KING, BLACK};
     this->black_pieces_remaining.push_back(KING);
-
-    // Initialising vectors
-    this->white_pieces_remaining = {};
-    this->black_pieces_remaining = {};
-    this->move_history = {};
 
     // Initializing en_passant target
     this->en_passant_target = {-1, -1};
@@ -1418,13 +1418,13 @@ int evaluate_board(board &the_board, const int &depth)
     // If white is checkmated, this is ideal for minimizing player
     if (the_board.checkmate_or_stalemate(WHITE, false))
     {
-        return -100000 + depth; // We add depth so that the AI chooses shortest path to checkmate
+        return -100000 + (MINIMAX_DEPTH - depth); // We add depth so that the AI chooses shortest path to checkmate
     }
 
     // If black is checkmated, this is ideal for maximizing player
     if (the_board.checkmate_or_stalemate(BLACK, false))
     {
-        return 100000 - depth; // We substract depth so that the AI chooses shortest path to checkmate
+        return 100000 - (MINIMAX_DEPTH - depth); // We substract depth so that the AI chooses shortest path to checkmate
     }
 
     // Checking for stalemate
@@ -1974,10 +1974,10 @@ move find_best_move(board &the_board, int depth, piece_color player_color)
 
     // If there are no legal moves to play, just return best_move to signify either
     // checkmate or stalemate
-    if (possible_legal_moves.size() == 0)
-    {
-        return best_move;
-    }
+    // if (possible_legal_moves.size() == 0)
+    // {
+    //     return best_move;
+    // }
 
     // Initialize best_value to a very high integer for white
     // and a very low integer for black

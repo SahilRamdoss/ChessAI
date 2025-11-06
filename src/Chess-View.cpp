@@ -196,7 +196,7 @@ void AI_move(const SDLStructures &app_structure, game &current_game)
     // Getting the color of the pieces moved by the AI
     piece_color AI_color = current_game.active_player;
 
-    int depth = 4; // Depth applied to minimax algorithm. The value of depth MUST BE EVEN for better performance
+    int depth = MINIMAX_DEPTH; // Depth applied to minimax algorithm. The value of depth MUST BE EVEN for better performance
     move best_move; // Best move calculated by AI
     chess_piece moving_piece; // Piece being moved by AI
 
@@ -250,7 +250,7 @@ bool end_the_game(game &current_game)
         SDL_Log("White WIN");
         return true;
     }
-    else if (current_game.game_board.checkmate_or_stalemate(WHITE, true) || current_game.game_board.checkmate_or_stalemate(WHITE, true))
+    else if (current_game.game_board.checkmate_or_stalemate(WHITE, true) || current_game.game_board.checkmate_or_stalemate(BLACK, true))
     {
         current_game.outcome = DRAW;
 
@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
     SDL_Event event;     // Used to store an SDL event in the SDL event queue
 
     bool AI_active = true;// Flag to know if the AI is playing or not. implemented as a variable here 
-                            // due to possible program extension later
+                        // due to possible program extension later
 
     piece_color AI_color = BLACK; // Color of chess pieces played by AI
 
