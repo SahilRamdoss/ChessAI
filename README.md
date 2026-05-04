@@ -1,5 +1,13 @@
 # Chess AI
 
+## Key Achievements
+
+- Achieved a depth of 5 for the Minimax Algorithm with alpha-beta pruning, as a balance between computational time and AI performance.
+- Created custom  heuristic functions to evaluate board states.
+- Created game logic, requiring mastery of OOP concepts, and data structures and algorithms(stacks,etc..)
+
+## Summary
+
 This is a chess game where players can play in 1 v/s 1 multiplayer mode or even better, try beating the AI bot. Be careful though, the AI has 1000000 elo! Beating it is more difficult than beating Magnus Carlsen, no cap.
 
 ## 🧩Dependencies 
